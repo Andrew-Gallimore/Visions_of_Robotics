@@ -4,6 +4,7 @@
 #include "imageUtils.h"
 #include "makeDepthMap.h"
 #include "timer.h"
+#include "Structs.h"
 
 using namespace std;
 
@@ -14,14 +15,14 @@ using namespace std;
 //     int y;
 //     int z;
 // };
-struct Round {
-    int imageScalar;                    // How much to scale down the image
-    int windowSize;                     // How big the window is
-    int checkItterations;               // How many itterations to check for a match for each point
-    int numPoints;                      // Number of points in the image
-    vector<Point> initialPoints;        // Points in the first image
-    vector<Point> matchPoints;          // Points *found* in the second image
-};
+// struct Round {
+//     int imageScalar;                    // How much to scale down the image
+//     int windowSize;                     // How big the window is
+//     int checkItterations;               // How many itterations to check for a match for each point
+//     int numPoints;                      // Number of points in the image
+//     vector<Point> initialPoints;        // Points in the first image
+//     vector<Point> matchPoints;          // Points *found* in the second image
+// };
 
 // Variables
 vector<Round> rounds;
@@ -159,7 +160,8 @@ int main() {
     // TODO: Make a gradient depth map from the points
     Timer timer;
     timer.start();
-    makeDepthMap(rounds[1].matchPoints, imageWidth, imageHeight, 5, 20.0);
+    DepthMap depthMap(imageWidth, imageHeight, 5, 20.0);
+    depthMap.makeDepthMap(rounds[1].matchPoints);
     timer.stop();
     printf("Time to make depth map: %f ms\n", timer.elapsedMilliseconds());
     // For 100 random-placed points, 30 grid size, 110.0 distance threshold, sigma = 4.0

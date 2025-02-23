@@ -9,15 +9,42 @@
 #include <cmath>
 #include <string>
 #include "imageUtils.h"
+#include "quadTree.h"
+#include "Structs.h"
 
 using namespace std;
 
-struct Point {
-    int x;
-    int y;
-    int z;
-};
+class DepthMap {
+    public:
+        // Constructor/Destructor
+        DepthMap(int imageWidth, int imageHeight, int gridSize, float distanceThreshold);
+        ~DepthMap();
 
-void makeDepthMap(vector<Point>& points, int imageWidth, int imageHeight, int gridSize, float distanceThreshold);
+        // Public Methods
+        void makeDepthMap(vector<Point>& points);
+    private:
+        // Variables
+        int imageWidth;
+        int imageHeight;
+        int gridSize;
+        
+        float distanceThreshold;
+        int gridWidth;
+        int gridHeight;
+        int maxPointsPerCell;
+        Point* grid;
+        int* cellPointCounts;
+
+        int maxColor;
+        int pixelCount;
+        unsigned char *imageData;
+
+        // Variables for debugging;
+        int pointsChecked;
+
+        // Private Methods
+        void populateGrid(vector<Point>& points);
+        void getLocalPoints(int pixelX, int pixelY, Point nearbyPoints[], int& numOfNearbyPoints);
+};
 
 #endif // MAKE_DEPTH_MAP_H

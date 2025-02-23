@@ -8,3 +8,4 @@ settings.json
 # Any executables we build
 calib
 tests
+matching
