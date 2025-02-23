@@ -8,27 +8,10 @@
 
 using namespace std;
 
-
-// Define structures for a round and a point
-// struct Point {
-//     int x;
-//     int y;
-//     int z;
-// };
-// struct Round {
-//     int imageScalar;                    // How much to scale down the image
-//     int windowSize;                     // How big the window is
-//     int checkItterations;               // How many itterations to check for a match for each point
-//     int numPoints;                      // Number of points in the image
-//     vector<Point> initialPoints;        // Points in the first image
-//     vector<Point> matchPoints;          // Points *found* in the second image
-// };
-
 // Variables
 vector<Round> rounds;
 int imageWidth = 720;
 int imageHeight = 480;
-
 
 
 
@@ -41,17 +24,6 @@ vector<Point> generatePoints(int numPoints, int imageWidth, int imageHeight) {
     // Adding points in a grid across the image
     int xStep = imageWidth / (sqrt(numPoints) + 1);
     int yStep = imageHeight / (sqrt(numPoints) + 1);
-    
-    // for(int i = 0; i < sqrt(numPoints); i++) {
-    //     for(int j = 0; j < sqrt(numPoints); j++) {
-    //         Point newPoint = {
-    //             (i * xStep) + xStep,
-    //             (j * yStep) + yStep,
-    //             0
-    //         };
-    //         newPoints.push_back(newPoint);
-    //     }
-    // }
 
     // Adding points randomly
     for (int i = 0; i < numPoints; i++) {
@@ -145,25 +117,18 @@ int main() {
             rounds[i + 1].initialPoints = rounds[i].matchPoints;
         }
     }
-
-    // Manually setting z values for making the gradient depth map
-    // rounds[1].matchPoints[0].z = 0;
-    // rounds[1].matchPoints[1].z = 50;
-    // rounds[1].matchPoints[2].z = 200;
-    // rounds[1].matchPoints[3].z = 255;
     
     // Filling the z values with random values
     for (int i = 0; i < rounds[1].numPoints; i++) {
         rounds[1].matchPoints[i].z = rand() % 256;
     }
 
-    // TODO: Make a gradient depth map from the points
     Timer timer;
+
     timer.start();
-    DepthMap depthMap(imageWidth, imageHeight, 5, 20.0);
+    DepthMap depthMap(imageWidth, imageHeight, 5, 15.0);
     depthMap.makeDepthMap(rounds[1].matchPoints);
     timer.stop();
-    printf("Time to make depth map: %f ms\n", timer.elapsedMilliseconds());
     // For 100 random-placed points, 30 grid size, 110.0 distance threshold, sigma = 4.0
     // For 400 random-placed points, 40 grid size, 40 to 60 distance threshold (at 400 points, distance between them is 36), sigma = 3 to 4
     // For 5000 random-placed points, 5 grid size, 20.0 distance threshold, sigma = 4.0
@@ -172,16 +137,9 @@ int main() {
     // We want avg. number of local points to be around 7-12 (higher is more blurry)
     // We want avg. number of checked local points to not be limiting the local points it uses, so will be higher. Seams its min is dependent on how we position the points. The issues arise (when its too low) that it can't find other points to access, so gaps show up. If its too high, its just slower checking more points.
 
+    // TODO: Make depth map not have to take a grid-sise, but instead have a better data structure that can handle the points better
 
-
-    // Print out the results
-    // for (int i = 0; i < (int)rounds.size(); i++) {
-    //     printf("Round %d found points: \n", i + 1);
-    //     for (int j = 0; j < rounds[i].numPoints; j++) {
-    //         printf("P%d: (%d, %d, %d) \n", j, rounds[i].matchPoints[j].x, rounds[i].matchPoints[j].y, rounds[i].matchPoints[j].z);
-    //     }
-    //     printf("\n");
-    // }
+    printf("Time to make depth map: %f ms\n", timer.elapsedMilliseconds());
 
     return 0;
 }
