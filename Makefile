@@ -8,7 +8,7 @@ CFLAGS = -Wall
 TEST_SRCS = utilsTest.cc vectorUtils.cc matrixUtils.cc
 QR_SRCS = qrDecomp.cc vectorUtils.cc matrixUtils.cc
 CALIB_SRCS = calib.cc calibFile.cc vectorUtils.cc matrixUtils.cc
-MATCHING_SRCS = matching.cc
+MATCHING_SRCS = matching.cc imageUtils.cc timer.cc makeDepthMap.cc
 
 # Object files (replace .cc with .o)
 TEST_OBJS = $(TEST_SRCS:.cc=.o)
@@ -33,7 +33,7 @@ $(CALIB_TARGET): $(CALIB_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(CALIB_OBJS)
 
 $(MATCHING_TARGET): $(MATCHING_OBJS)
-	$(CC) $(CFLAGS) -o $@ $(MATCHING_OBJS)	
+	$(CC) $(CFLAGS) -o $@ $(MATCHING_OBJS) -ljpeg
 
 # Rule to build object files
 %.o: %.cc
