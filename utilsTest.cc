@@ -1,8 +1,8 @@
 // Homework 1, Robotics 444
 // By: Andrew Gallimore
 
-#include "vectorUtils.h"
-#include "matrixUtils.h"
+#include "utils/vectorUtils.h"
+#include "utils/matrixUtils.h"
 #include <stdio.h>
 
 using namespace std;

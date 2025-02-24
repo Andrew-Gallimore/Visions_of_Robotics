@@ -5,10 +5,10 @@ CC = g++
 CFLAGS = -Wall
 
 # Source files for different targets
-TEST_SRCS = utilsTest.cc vectorUtils.cc matrixUtils.cc
-QR_SRCS = qrDecomp.cc vectorUtils.cc matrixUtils.cc
-CALIB_SRCS = calib.cc calibFile.cc vectorUtils.cc matrixUtils.cc
-MATCHING_SRCS = matching.cc imageUtils.cc timer.cc makeDepthMap.cc
+TEST_SRCS = utils/utilsTest.cc utils/vectorUtils.cc utils/matrixUtils.cc
+QR_SRCS = qrDecomp.cc utils/vectorUtils.cc matrixUtils.cc
+CALIB_SRCS = calib.cc calibFile.cc utils/vectorUtils.cc utils/matrixUtils.cc
+MATCHING_SRCS = matching.cc utils/imageUtils.cc utils/timer.cc makeDepthMap.cc
 
 # Object files (replace .cc with .o)
 TEST_OBJS = $(TEST_SRCS:.cc=.o)

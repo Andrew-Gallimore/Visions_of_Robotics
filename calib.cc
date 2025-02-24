@@ -8,8 +8,8 @@
 #include <string>
 #include <sstream>
 #include "calibFile.h"
-#include "matrixUtils.h"
-#include "vectorUtils.h"
+#include "utils/matrixUtils.h"
+#include "utils/vectorUtils.h"
 
 using namespace std;
 

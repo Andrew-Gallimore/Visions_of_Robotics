@@ -1,9 +1,9 @@
 #include <string>
 #include <vector>
 #include <cmath>
-#include "imageUtils.h"
+#include "utils/imageUtils.h"
 #include "makeDepthMap.h"
-#include "timer.h"
+#include "utils/timer.h"
 #include "Structs.h"
 
 using namespace std;

@@ -8,8 +8,7 @@
 #include <vector>
 #include <cmath>
 #include <string>
-#include "imageUtils.h"
-#include "quadTree.h"
+#include "utils/imageUtils.h"
 #include "Structs.h"
 
 using namespace std;
