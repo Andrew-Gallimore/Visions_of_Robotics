@@ -15,7 +15,7 @@ DepthMap::DepthMap(int imageWidth, int imageHeight, int gridSize, float distance
     // Create a grid for spatial partitioning
     this->gridWidth = (imageWidth + gridSize - 1) / gridSize;
     this->gridHeight = (imageHeight + gridSize - 1) / gridSize;
-    this->maxPointsPerCell = 200; // Assuming a maximum of 100 points per cell
+    this->maxPointsPerCell = 300; // Assuming a maximum of 100 points per cell
 
     this->grid = new Point[this->gridWidth * this->gridHeight * maxPointsPerCell];
     this->cellPointCounts = new int[this->gridWidth * this->gridHeight]();
@@ -40,6 +40,7 @@ void DepthMap::populateGrid(vector<Point>& points) {
         int newCount = cellPointCounts[cellIndex] + 1;
 
         if(newCount >= maxPointsPerCell * 0.8) {
+            // printf("Point: (%d, %d) index %d\n", point.x, point.y, i);
             printf("!!!! Too many points in cell: %d\n", newCount);
             break;
         }
@@ -48,6 +49,7 @@ void DepthMap::populateGrid(vector<Point>& points) {
             cellPointCounts[cellIndex] = newCount;
         }
     }
+    printf("Done populating grid\n");
 }
 
 void DepthMap::getLocalPoints(int pixelX, int pixelY, Point nearbyPoints[], int& numOfNearbyPoints) {
@@ -113,7 +115,7 @@ void DepthMap::makeDepthMap(vector<Point>& points) {
         int pixelY = i / imageWidth;
 
         // Get the local points to pixel
-        Point nearbyPoints[200] = {0}; // Gets populated by getLocalPoints
+        Point nearbyPoints[300] = {0}; // Gets populated by getLocalPoints
         int numOfNearbyPoints = 0;     // Gets set by getLocalPoints
         DepthMap::getLocalPoints(pixelX, pixelY, nearbyPoints, numOfNearbyPoints);
 

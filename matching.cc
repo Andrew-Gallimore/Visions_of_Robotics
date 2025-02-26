@@ -54,7 +54,6 @@ void sampleWindow(int* window, int windowSize, int imageScale, int x, int y, PPM
 }
 
 void searchForPoint(Point& point, Point& newPoint, int dir, int imageScaler, int windowSize, PPMImage* leftImage, PPMImage* rightImage) {
-    // printf("Searching for point at (%d, %d)\n", point.x, point.y);
     // We assume the images are rectified, so we only need to search in x direction
     bool found = false;
     int itterMax = 200;
@@ -126,16 +125,7 @@ void searchForPoint(Point& point, Point& newPoint, int dir, int imageScaler, int
         // Keep track of the points we have checked
         checkedPoints[itterations] = checkDiffSum;
 
-        // If the difference is small enough, we have found the point
-        // if(checkDiffSum < 10000) {
-        //     newPoint.x = sampleX;
-        //     newPoint.y = sampleY;
-        //     newPoint.z = point.z;
-            
-        //     printf(" ... Found point at (%d, %d) with diff %d, itteration=%d\n", sampleX, sampleY, checkDiffSum, itterations);
-        //     found = true;
-        // }
-
+        // Debugging only...
         if(found) {
             // printf("Point/newPoint (%d, %d)\n", point.x, newPoint.x);
             // printf(" ... Found point at (%d, %d) with diff %d, itteration=%d\n", sampleX, sampleY, checkDiffSum, itterations);
@@ -151,23 +141,18 @@ void runRound(Round& round, PPMImage* leftImage, PPMImage* rightImage) {
     for(int i = 0; i < round.numPoints; i++) {
         Point& point = round.initialPoints[i];
         Point newPoint = {-1000000, -1000000, -1000000};
+
+        // TODO: Scale the images to the size of the round
+            // - This begs the question of how we should deal with the image in the next round, if the next round uses the same image, should the scaled one be used? Or should the original be used and scaled, for simplicity? Up to you!
         
         // Determine the direction to check in (-1 = left, 1 = right)
-        // If on left side of screen, search left
         int dir = -1;
-        // if (point.x < round.windowSize / 2) {
-        //     dir = -1;
-        // }
 
         searchForPoint(point, newPoint, dir, round.imageScalar, round.windowSize, leftImage, rightImage);
-
-        // printf("Point %d: (%d, %d) -> (%d, %d)\n", i, point.x, point.y, newPoint.x, newPoint.y);
 
         // Put the found point into the matchPoints
         round.matchPoints.push_back(newPoint);
     }
-
-    // printf("Distance between points 1: %d\n", round.initialPoints[0].x - round.matchPoints[0].x);
 }
 
 // Generates the rounds we want for the algorithm
@@ -215,7 +200,6 @@ int main() {
     // printf("\n");
 
     Timer roundsTimer;
-
     roundsTimer.start();
 
     // Loop over all the rounds
@@ -224,14 +208,8 @@ int main() {
         runRound(rounds[i], leftImage, rightImage);
         printf(" >>> Finished round %d\n", i);
 
-        // TODO: Calculate distances between points
-        // TODO: Maybe do some filtering of points/add some more, etc.
-            // - If so, should depend on a parameter in the round if we do
-        
-        // for(int j = 0; j < rounds[i].numPoints; j++) {
-        //     printf("Distance between points 2 %d: %d\n", j, rounds[i].initialPoints[j].x - rounds[i].matchPoints[j].x);
-        // }
-        // printf("Distance between points 2: %f\n", rounds[0].initialPoints[0].x - rounds[0].matchPoints[0].x);
+        // TODO: Maybe do some filtering out points/adding some more based on some metric
+            // - If so, I think it should depend on a parameter in the round for if we do or not
 
         // Put results into the next round
         if (i < (int)rounds.size() - 1) {
