@@ -214,6 +214,10 @@ int main() {
     // }
     // printf("\n");
 
+    Timer roundsTimer;
+
+    roundsTimer.start();
+
     // Loop over all the rounds
     for (int i = 0; i < (int)rounds.size(); i++) {
         // Run the round
@@ -234,6 +238,8 @@ int main() {
             rounds[i + 1].initialPoints = rounds[i].matchPoints;
         }
     }
+
+    roundsTimer.stop();
 
     int lastRound = rounds.size() - 1;
 
@@ -284,12 +290,12 @@ int main() {
     // }
 
 
-    Timer timer;
+    Timer depthMapTimer;
 
-    timer.start();
+    depthMapTimer.start();
     DepthMap depthMap(imageWidth, imageHeight, 4, 15.0);
     depthMap.makeDepthMap(rounds[lastRound].matchPoints);
-    timer.stop();
+    depthMapTimer.stop();
     // For 100 random-placed points, 30 grid size, 110.0 distance threshold, sigma = 4.0
     // For 400 random-placed points, 40 grid size, 40 to 60 distance threshold (at 400 points, distance between them is 36), sigma = 3 to 4
     // For 5000 random-placed points, 5 grid size, 20.0 distance threshold, sigma = 4.0
@@ -300,7 +306,11 @@ int main() {
 
     // TODO: Make depth map not have to take a grid-sise, but instead have a better data structure that can handle the points better
 
-    printf("Time to make depth map: %f ms\n", timer.elapsedMilliseconds());
+    // Printing out the timeing
+    printf("\n");
+    printf("Rounds time: %d ms\n", (int)roundsTimer.elapsedMilliseconds());
+    printf("Depth map time: %d ms\n", (int)depthMapTimer.elapsedMilliseconds());
+    printf("Total time: %d ms\n", (int)(depthMapTimer.elapsedMilliseconds() + roundsTimer.elapsedMilliseconds()));
 
     return 0;
 }
