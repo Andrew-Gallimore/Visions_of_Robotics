@@ -1,26 +1,31 @@
 # Compiler
 CC = g++
+NVCC = nvcc
 
 # Compiler flags
 CFLAGS = -Wall
+CUDAFLAGS = -G
 
 # Source files for different targets
 TEST_SRCS = utils/utilsTest.cc utils/vectorUtils.cc utils/matrixUtils.cc
 QR_SRCS = qrDecomp.cc utils/vectorUtils.cc matrixUtils.cc
 CALIB_SRCS = calib.cc calibFile.cc utils/vectorUtils.cc utils/matrixUtils.cc
 MATCHING_SRCS = matching.cc utils/imageUtils.cc utils/timer.cc makeDepthMap.cc
+CUDA_SRCS = cudaTest.cu
 
 # Object files (replace .cc with .o)
 TEST_OBJS = $(TEST_SRCS:.cc=.o)
 QR_OBJS = $(QR_SRCS:.cc=.o)
 CALIB_OBJS = $(CALIB_SRCS:.cc=.o)
 MATCHING_OBJS = $(MATCHING_SRCS:.cc=.o)
+CUDA_OBJS = $(CUDA_SRCS:.cu=.o)
 
 # Output executables
 TEST_TARGET = tests
 QR_TARGET = qr
 CALIB_TARGET = calib
 MATCHING_TARGET = matching
+CUDA_TARGET = cuda
 
 # Generic rule to build the final executable
 $(TEST_TARGET): $(TEST_OBJS)
@@ -38,6 +43,8 @@ $(MATCHING_TARGET): $(MATCHING_OBJS)
 # Rule to build object files
 %.o: %.cc
 	$(CC) $(CFLAGS) -c $< -o $@
+%.o: %.cu
+	$(NVCC) $(CUDAFLAGS) -c $< -o $@
 
 # Clean rule
 clean:
