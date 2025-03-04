@@ -187,10 +187,10 @@ void calculateDistance(float spacing, float leftOffsetX, float leftCenterX, floa
 
 // Runs the whole matching algorithm
 int main() {
-    convertJPGToPPM("images/newnewLeft.jpg", "images/newnewLeft.ppm");
-    convertJPGToPPM("images/newnewRight.jpg", "images/newnewRight.ppm");
-    PPMImage* leftImage = readPPM("images/newnewLeft.ppm", 0);
-    PPMImage* rightImage = readPPM("images/newnewRight.ppm", 0);
+    //convertJPGToPPM("images/newnewLeft.jpg", "images/newnewLeft.ppm");
+    //convertJPGToPPM("images/newnewRight.jpg", "images/newnewRight.ppm");
+    PPMImage* leftImage = readPPM("images/leftBW.ppm", 0);
+    PPMImage* rightImage = readPPM("images/rightBW.ppm", 0);
     initializeRounds(rounds);
 
     // Print out the initial points

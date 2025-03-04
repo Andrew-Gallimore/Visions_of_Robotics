@@ -73,13 +73,16 @@ void searchForPoint(Point& point, Point& newPoint, int dir, int imageScaler, int
     //sampleWindow(window, windowSize, imageScaler, point.x, point.y, leftImage);
     
     int* d_window; 
-    PPMImage* d_image;
+    PPMImage* d_left;
+    PPMImage* d_right;
     
     cudaMalloc(&d_window, (windowSize * windowSize) * sizeof(int));
-    cudaMalloc(&d_image, sizeof(PPMImage));
-    cudaMemcpy(d_image, leftImage, (windowSize * windowSize) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMalloc(&d_left, sizeof(PPMImage));
+    cudaMemcpy(d_left, leftImage, (windowSize * windowSize) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMalloc(&d_right, sizeof(PPMImage));
+    cudaMemcpy(d_right, rightImage, (windowSize * windowSize) * sizeof(int), cudaMemcpyHostToDevice);
     
-    sampleWindowP<<<windowSize, windowSize>>>(d_window, windowSize, imageScaler, point.x, point.y, d_image);
+    sampleWindowP<<<windowSize * windowSize, 1>>>(d_window, windowSize, imageScaler, point.x, point.y, d_left);
     cudaMemcpy(window, d_window, (windowSize * windowSize) * sizeof(int), cudaMemcpyDeviceToHost);
 
     // Keep track of the points we have checked
@@ -135,7 +138,7 @@ void searchForPoint(Point& point, Point& newPoint, int dir, int imageScaler, int
         int checkDiffSum = 0;
         //sampleWindow(checkWindow, windowSize, imageScaler, sampleX, sampleY, rightImage);
 
-    	sampleWindowP<<<windowSize, windowSize>>>(d_window, windowSize, imageScaler, point.x, point.y, d_image);
+    	sampleWindowP<<<windowSize * windowSize, 1>>>(d_window, windowSize, imageScaler, sampleX, sampleY, d_right);
     	cudaMemcpy(checkWindow, d_window, (windowSize * windowSize) * sizeof(int), cudaMemcpyDeviceToHost);
         
 	// Compare the two windows
@@ -156,7 +159,8 @@ void searchForPoint(Point& point, Point& newPoint, int dir, int imageScaler, int
     }
 
     cudaFree(d_window);
-    cudaFree(d_image);
+    cudaFree(d_left);
+    cudaFree(d_right);
 }
 
 // A single round of searching in the algorithm
