@@ -20,7 +20,7 @@ class DepthMap {
         ~DepthMap();
 
         // Public Methods
-        void makeDepthMap(vector<Point>& points);
+        void makeDepthMap(Point points[]);
     private:
         // Variables
         int imageWidth;
@@ -42,7 +42,7 @@ class DepthMap {
         int pointsChecked;
 
         // Private Methods
-        void populateGrid(vector<Point>& points);
+        void populateGrid(Point points[]);
         void getLocalPoints(int pixelX, int pixelY, Point nearbyPoints[], int& numOfNearbyPoints);
 };
 

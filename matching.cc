@@ -9,7 +9,6 @@
 using namespace std;
 
 // Variables
-vector<Round> rounds;
 int imageWidth = 640;
 int imageHeight = 480;
 
@@ -18,9 +17,7 @@ int imageHeight = 480;
 // ==== Helper Functions ====
 
 // Generates the points for a round
-vector<Point> generatePoints(int numPoints, int imageWidth, int imageHeight) {
-    vector<Point> newPoints;
-
+void generatePoints(Point array[], int numPoints, int imageWidth, int imageHeight) {
     // Adding points in a grid across the image
     int xStep = imageWidth / (sqrt(numPoints) + 1);
     int yStep = imageHeight / (sqrt(numPoints) + 1);
@@ -32,11 +29,8 @@ vector<Point> generatePoints(int numPoints, int imageWidth, int imageHeight) {
             rand() % imageHeight,
             0
         };
-        newPoints.push_back(newPoint);
+        array[i] = newPoint;
     }
-
-    // Returning the points
-    return newPoints;
 }
 
 void sampleWindow(int* window, int windowSize, int imageScale, int x, int y, PPMImage* image) {
@@ -135,47 +129,6 @@ void searchForPoint(Point& point, Point& newPoint, int dir, int imageScaler, int
     }
 }
 
-// A single round of searching in the algorithm
-void runRound(Round& round, PPMImage* leftImage, PPMImage* rightImage) {
-    // Loop over all the points in the round
-    for(int i = 0; i < round.numPoints; i++) {
-        Point& point = round.initialPoints[i];
-        Point newPoint = {-1000000, -1000000, -1000000};
-
-        // TODO: Scale the images to the size of the round
-            // - This begs the question of how we should deal with the image in the next round, if the next round uses the same image, should the scaled one be used? Or should the original be used and scaled, for simplicity? Up to you!
-        
-        // Determine the direction to check in (-1 = left, 1 = right)
-        int dir = -1;
-
-        searchForPoint(point, newPoint, dir, round.imageScalar, round.windowSize, leftImage, rightImage);
-
-        // Put the found point into the matchPoints
-        round.matchPoints.push_back(newPoint);
-    }
-}
-
-// Generates the rounds we want for the algorithm
-void initializeRounds(vector<Round>& rounds) {
-    // Defines the rounds for algorithm
-    rounds.push_back({
-        3,  // 1/8th size
-        9,  // 4x4 window
-        30, // 30 Itterations on check
-        12000,  // 4 points
-        generatePoints(12000, imageWidth, imageHeight),
-        {}
-    });
-    // rounds.push_back({
-    //     1,  // Full size
-    //     9, // 16x16 window
-    //     16, // 16 Itterations on check
-    //     12000,  // 4 points
-    //     {},
-    //     {}
-    // });
-}
-
 void calculateDistance(float spacing, float leftOffsetX, float leftCenterX, float leftFocalX, 
                                       float rightOffsetX, float rightCenterX, float rightFocalX, float& z) {
     z = -1.0 * spacing / (((rightOffsetX - rightCenterX) / rightFocalX) - ((leftOffsetX - leftCenterX) / leftFocalX));
@@ -187,40 +140,34 @@ void calculateDistance(float spacing, float leftOffsetX, float leftCenterX, floa
 
 // Runs the whole matching algorithm
 int main() {
-    convertJPGToPPM("images/newnewLeft.jpg", "images/newnewLeft.ppm");
-    convertJPGToPPM("images/newnewRight.jpg", "images/newnewRight.ppm");
-    PPMImage* leftImage = readPPM("images/newnewLeft.ppm", 0);
-    PPMImage* rightImage = readPPM("images/newnewRight.ppm", 0);
-    initializeRounds(rounds);
+    convertJPGToPPM("images/newLeft.jpg", "images/newLeft.ppm");
+    convertJPGToPPM("images/newRightRect.jpg", "images/newRightRect.ppm");
+    convertPPMToBW("images/newLeft.ppm", "images/newLeftBW.ppm");
+    convertPPMToBW("images/newRightRect.ppm", "images/newRightRectBW.ppm");
+    PPMImage* leftImage = readPPM("images/newLeftBW.ppm", 0);
+    PPMImage* rightImage = readPPM("images/newRightRectBW.ppm", 0);
 
-    // Print out the initial points
-    // printf("Initial points: \n");
-    // for (int i = 0; i < rounds[0].numPoints; i++) {
-    //     printf("P%d: (%d, %d, %d) \n", i, rounds[0].initialPoints[i].x, rounds[0].initialPoints[i].y, rounds[0].initialPoints[i].z);
-    // }
-    // printf("\n");
+    int numPoints = 5000;
+    Point initialPoints[numPoints];
+    Point matchPoints[numPoints];
 
-    Timer roundsTimer;
-    roundsTimer.start();
+    // Generate the first points
+    generatePoints(initialPoints, numPoints, imageWidth, imageHeight);
 
-    // Loop over all the rounds
-    for (int i = 0; i < (int)rounds.size(); i++) {
-        // Run the round
-        runRound(rounds[i], leftImage, rightImage);
-        printf(" >>> Finished round %d\n", i);
+    Timer matchingTimer;
+    matchingTimer.start();
 
-        // TODO: Maybe do some filtering out points/adding some more based on some metric
-            // - If so, I think it should depend on a parameter in the round for if we do or not
+    // Search for the points in the right image
+    for(int i = 0; i < numPoints; i++) {
+        Point& point = initialPoints[i];
+        Point newPoint = {-1000000, -1000000, -1000000};
 
-        // Put results into the next round
-        if (i < (int)rounds.size() - 1) {
-            rounds[i + 1].initialPoints = rounds[i].matchPoints;
-        }
+        searchForPoint(point, newPoint, -1, 3, 9, leftImage, rightImage);
+
+        matchPoints[i] = newPoint;
     }
 
-    roundsTimer.stop();
-
-    int lastRound = rounds.size() - 1;
+    matchingTimer.stop();
 
     // Got from running calibration on the images
     // fx, 0,  Ox
@@ -241,9 +188,9 @@ int main() {
     float spacing = 60.0; // mm
 
     // Calculate the distance between the two cameras
-    for(int i = 0; i < rounds[lastRound].numPoints; i++) {
-        Point& leftPoint = rounds[lastRound].initialPoints[i];
-        Point& rightPoint = rounds[lastRound].matchPoints[i];
+    for(int i = 0; i < numPoints; i++) {
+        Point& leftPoint = initialPoints[i];
+        Point& rightPoint = matchPoints[i];
 
         // printf("Left/right point: (%d, %d)\n", leftPoint.x, rightPoint.x);
 
@@ -253,27 +200,21 @@ int main() {
         //                            rightPoint.x, calibMatrixRight[2], calibMatrixRight[0], z);
 
         // Set the z value in the point
-        // rounds[lastRound].matchPoints[i].z = (z - 1000) / 3;
+        // matchPoints[i].z = (z - 1000) / 3;
 
         // printf("Distance from camera: %f\n", (z - 1100) / 1.7);
-        // rounds[lastRound].matchPoints[i].z = (leftPoint.x - rightPoint.x) * 50;
-        rounds[lastRound].matchPoints[i].z = rightPoint.z * 2;
+        // matchPoints[i].z = (leftPoint.x - rightPoint.x) * 50;
+        matchPoints[i].z = rightPoint.z * 2;
 
         // printf("Distance from camera: %f\n", z;
     }
-
-    
-    // Filling the z values with random values
-    // for (int i = 0; i < rounds[lastRound].numPoints; i++) {
-    //     rounds[lastRound].matchPoints[i].z = rand() % 256;
-    // }
 
 
     Timer depthMapTimer;
 
     depthMapTimer.start();
-    DepthMap depthMap(imageWidth, imageHeight, 4, 15.0);
-    depthMap.makeDepthMap(rounds[lastRound].matchPoints);
+    DepthMap depthMap(imageWidth, imageHeight, 10, 30.0);
+    depthMap.makeDepthMap(matchPoints);
     depthMapTimer.stop();
     // For 100 random-placed points, 30 grid size, 110.0 distance threshold, sigma = 4.0
     // For 400 random-placed points, 40 grid size, 40 to 60 distance threshold (at 400 points, distance between them is 36), sigma = 3 to 4
@@ -287,9 +228,9 @@ int main() {
 
     // Printing out the timeing
     printf("\n");
-    printf("Rounds time: %d ms\n", (int)roundsTimer.elapsedMilliseconds());
+    printf("Matching time: %d ms\n", (int)matchingTimer.elapsedMilliseconds());
     printf("Depth map time: %d ms\n", (int)depthMapTimer.elapsedMilliseconds());
-    printf("Total time: %d ms\n", (int)(depthMapTimer.elapsedMilliseconds() + roundsTimer.elapsedMilliseconds()));
+    printf("Total time: %d ms\n", (int)(depthMapTimer.elapsedMilliseconds() + matchingTimer.elapsedMilliseconds()));
 
     return 0;
 }

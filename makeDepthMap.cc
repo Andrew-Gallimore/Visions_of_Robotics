@@ -15,7 +15,7 @@ DepthMap::DepthMap(int imageWidth, int imageHeight, int gridSize, float distance
     // Create a grid for spatial partitioning
     this->gridWidth = (imageWidth + gridSize - 1) / gridSize;
     this->gridHeight = (imageHeight + gridSize - 1) / gridSize;
-    this->maxPointsPerCell = 300; // Assuming a maximum of 100 points per cell
+    this->maxPointsPerCell = 500; // Assuming a maximum of x points per cell
 
     this->grid = new Point[this->gridWidth * this->gridHeight * maxPointsPerCell];
     this->cellPointCounts = new int[this->gridWidth * this->gridHeight]();
@@ -27,7 +27,7 @@ DepthMap::~DepthMap() {
     delete[] cellPointCounts;
 }
 
-void DepthMap::populateGrid(vector<Point>& points) {
+void DepthMap::populateGrid(Point points[]) {
     printf("Populating grid\n");
     // Populate the grid with points
     for(int i = 0; i < gridWidth * gridHeight; i++) {
@@ -36,7 +36,6 @@ void DepthMap::populateGrid(vector<Point>& points) {
         int gridX = point.x / gridSize;
         int gridY = point.y / gridSize;
         int cellIndex = gridY * gridWidth + gridX;
-
         int newCount = cellPointCounts[cellIndex] + 1;
 
         if(newCount >= maxPointsPerCell * 0.8) {
@@ -81,7 +80,7 @@ void DepthMap::getLocalPoints(int pixelX, int pixelY, Point nearbyPoints[], int&
                         numOfNearbyPoints++;
                     }
 
-                    if(numOfNearbyPoints >= 190) {
+                    if(numOfNearbyPoints >= 280) {
                         printf("!!!! Too many points in local area\n");
                         return;
                     }
@@ -91,7 +90,7 @@ void DepthMap::getLocalPoints(int pixelX, int pixelY, Point nearbyPoints[], int&
     }
 }
 
-void DepthMap::makeDepthMap(vector<Point>& points) {
+void DepthMap::makeDepthMap(Point points[]) {
     // Variables
     int maxColor = 255;
     int imagePixels = imageWidth * imageHeight;
@@ -109,11 +108,11 @@ void DepthMap::makeDepthMap(vector<Point>& points) {
     // Now, loop over all the pixels
     for (int i = 0; i < imagePixels; i++) {
         pointsChecked = 0; // Reset for each pixel
-
+        
         // Get the pixel coordinates
         int pixelX = i % imageWidth;
         int pixelY = i / imageWidth;
-
+        
         // Get the local points to pixel
         Point nearbyPoints[300] = {0}; // Gets populated by getLocalPoints
         int numOfNearbyPoints = 0;     // Gets set by getLocalPoints
