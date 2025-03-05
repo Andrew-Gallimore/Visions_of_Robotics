@@ -9,3 +9,6 @@ settings.json
 calib
 tests
 matching
+
+# Not-original images (*.ppm) in images folder
+images/*.ppm
