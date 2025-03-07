@@ -1,4 +1,7 @@
 #include "calibFile.h"
+#include <cmath>
+#include "utils/matrixUtils.h"
+
 using namespace std;
 
 // Constructor
@@ -15,12 +18,29 @@ calibFile::calibFile(string fileName_) {
 
 // Public Methods
 void calibFile::solveCalib() {
-    // Get the distance from the camera to the calibration cube
-    cout << "Enter the distance (in mm) from the camera to the calibration cube: ";
-    float distance;
-    cin >> distance;
-
     // TODO: Doing what ever math we had before
+    float pointsMatrix[numPoints * 2];
+
+    
+    for(int i = 0; i < numPoints; i++) {
+	            pointsMatrix[i] = x[i];
+		    pointsMatrix[i + numPoints] = y[i];
+    }
+
+    float d = 14 * 25;
+
+    float rotationMatrix[4]= { 1 / sqrt(2), -1 / sqrt(2), 1 / sqrt(2), 1 / sqrt(2) };
+
+    float outputMatrix[numPoints * 2];
+
+    matrixProduct(rotationMatrix, 2, 2, pointsMatrix, 2, numPoints, outputMatrix);
+
+    for(int i = 0; i < numPoints; i++) 
+    {
+       //printf ("%f ", outputMatrix[i + numPoints] + d);
+       zc[i] = outputMatrix[i + numPoints] + d;
+    }
+
 
     // Write data to file
     this->writeData();
@@ -73,14 +93,14 @@ void calibFile::readData() {
 void calibFile::writeData() {
     // Open the file
     ofstream outfile(fileName);
-    int numPoints = sizeof(u) / sizeof(u[0]);
+    //int numPoints = 21;
 
     // Write the parameters
     outfile << imageWidth << " " << imageHeight << endl;
 
     // Write the data
     for (int i = 0; i < numPoints; i++) {
-        outfile << u[i] << " " << v[i] << " " << x[i] << " " << y[i] << " " << z[i] << " " << zc[i] << endl;
+        outfile << (imageWidth - u[i]) << " " << v[i] << " " << x[i]/25 << " " << y[i]/25 << " " << z[i]/25 << " " << zc[i] << endl;
     }
 
     outfile.close();

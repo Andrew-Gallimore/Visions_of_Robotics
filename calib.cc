@@ -20,8 +20,11 @@ int main() {
    string inputFile;
    getline(std::cin, inputFile); // Read file name from user
 
+
    // Instantiate the calibFile class and read data
    calibFile calib(inputFile);
+
+   calib.solveCalib ();
 
    // Get the number of points
    int numPoints = calib.getNumPoints();
