@@ -147,7 +147,7 @@ int main() {
     PPMImage* leftImage = readPPM("images/newLeftBW.ppm", 0);
     PPMImage* rightImage = readPPM("images/newRightRectBW.ppm", 0);
 
-    int numPoints = 5000;
+    int numPoints = 12000;
     Point initialPoints[numPoints];
     Point matchPoints[numPoints];
 
@@ -213,7 +213,7 @@ int main() {
     Timer depthMapTimer;
 
     depthMapTimer.start();
-    DepthMap depthMap(imageWidth, imageHeight, 10, 30.0);
+    DepthMap depthMap(imageWidth, imageHeight, 4, 10.0);
     depthMap.makeDepthMap(matchPoints);
     depthMapTimer.stop();
     // For 100 random-placed points, 30 grid size, 110.0 distance threshold, sigma = 4.0

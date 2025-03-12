@@ -12,6 +12,7 @@ QR_SRCS = qrDecomp.cc utils/vectorUtils.cc matrixUtils.cc
 CALIB_SRCS = calib.cc calibFile.cc utils/vectorUtils.cc utils/matrixUtils.cc
 MATCHING_SRCS = matching.cc utils/imageUtils.cc utils/timer.cc makeDepthMap.cc
 MATCHING_P_SRCS = matchingP.cu utils/imageUtils.cc utils/timer.cc makeDepthMap.cc
+SEGMENTTEST_SRCS = segmentTest.cc segmentation.cc utils/imageUtils.cc utils/timer.cc
 
 # Object files (replace .cc with .o)
 TEST_OBJS = $(TEST_SRCS:.cc=.o)
@@ -19,6 +20,7 @@ QR_OBJS = $(QR_SRCS:.cc=.o)
 CALIB_OBJS = $(CALIB_SRCS:.cc=.o)
 MATCHING_OBJS = $(MATCHING_SRCS:.cc=.o)
 MATCHING_P_OBJS = $(MATCHING_P_SRCS:.cu=.o)
+SEGMENTTEST_OBJS = $(SEGMENTTEST_SRCS:.cc=.o)
 
 # Output executables
 TEST_TARGET = tests
@@ -26,6 +28,7 @@ QR_TARGET = qr
 CALIB_TARGET = calib
 MATCHING_TARGET = matching
 MATCHING_P_TARGET = matchingP
+SEGMENTTEST_TARGET = segmentTest
 
 # Generic rule to build the final executable
 $(TEST_TARGET): $(TEST_OBJS)
@@ -42,6 +45,9 @@ $(MATCHING_TARGET): $(MATCHING_OBJS)
 
 $(MATCHING_P_TARGET): $(MATCHING_P_SRCS)
 	$(NVCC) $(CUDAFLAGS) -o $@ $(MATCHING_P_SRCS) -ljpeg
+
+$(SEGMENTTEST_TARGET): $(SEGMENTTEST_OBJS)
+	$(CC) $(CFLAGS) -o $@ $(SEGMENTTEST_OBJS) -ljpeg
 
 # Rule to build object files
 %.o: %.cc
@@ -72,6 +78,9 @@ run_matching: run
 
 run_matchingP: TARGET=$(MATCHING_P_TARGET)
 run_matchingP: run
+
+run_segmentTest: TARGET=$(SEGMENTTEST_TARGET)
+run_segmentTest: run
 
 
 # ==== To run the tests ====
