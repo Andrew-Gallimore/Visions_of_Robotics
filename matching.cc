@@ -33,6 +33,91 @@ void generatePoints(Point array[], int numPoints, int imageWidth, int imageHeigh
     }
 }
 
+bool generateGridPoints(Point array[], int& numPoints, int totalPoints, int pointIndex) {
+    // point.layer = 0 => base layer, so full image size
+    // point.layer = 1 => quarter of the image
+    // point.layer = 2 => 1/16 of the image, etc
+
+    // Check if we have enough space for the new points
+    if(numPoints + 4 >= totalPoints) {
+        printf("!!!! Not enough space for more points\n");
+        return false;
+    }
+
+    // Calcuating the number of points to add
+    int windowSizeWidth;
+    int windowSizeHeight;
+    float xStep;
+    float yStep;
+    int layer = -1;
+    // float windowOffsetX;
+    // float windowOffsetY;
+    if(pointIndex == 0) {
+        // Base case
+        layer = 0;
+
+        windowSizeWidth = imageWidth;
+        windowSizeHeight = imageHeight;
+        xStep = imageWidth / 4;
+        yStep = imageHeight / 4;
+        // windowOffsetX = xStep;
+        // windowOffsetY = yStep;
+    }else {
+        // The layer the new points are at on the quadtree
+        layer = array[pointIndex].layer + 1;
+
+        // Setting a smaller window
+        windowSizeWidth = imageWidth * (layer * 2);
+        windowSizeHeight = imageHeight * (layer * 2);
+        xStep = imageWidth / pow(2, layer + 2);
+        yStep = imageHeight / pow(2, layer + 2);
+        // windowOffsetX = xStep * floor(array[pointIndex].x / (xStep * 2));
+        // windowOffsetY = yStep * floor(array[pointIndex].y / (yStep * 2));
+    }
+
+    
+    // For all the points it needs to add
+    for(int i = 0; i < 4; i++) {
+        // Calculating position of the new point
+        int offsetX;
+        int offsetY;
+        if(i % 2 == 0) {
+            offsetX = -1 * xStep;
+        }else {
+            offsetX = xStep;
+        }
+        if(i / 2 == 0) {
+            offsetY = -1 * yStep;
+        }else {
+            offsetY = yStep;
+        }
+        
+        int x = array[pointIndex].x + offsetX;
+        int y = array[pointIndex].y + offsetY;
+        
+        // printf("Point (%d, %d)\n", array[pointIndex].x, array[pointIndex].y);
+        
+        // Adding the point to the array
+        array[numPoints + i + 1] = {
+            x,
+            y,
+            -1,
+            layer
+        };
+        
+        if(x < 1 || x >= imageWidth || y < 1 || y >= imageHeight) {
+            printf("Layer: %d\n", layer);
+            printf("Point Index: %d\n", pointIndex);
+            printf("Offset: (%d, %d)\n", offsetX, offsetY);
+            printf("Parent point: (%d, %d)\n", array[pointIndex].x, array[pointIndex].y);
+            printf("Point: (%d, %d)\n\n", x, y);
+        }
+    }
+
+    numPoints += 4;
+    return true;
+}
+
 void sampleWindow(int* window, int windowSize, int imageScale, int x, int y, PPMImage* image) {
     for(int i = 0; i < windowSize * windowSize; i++) {
         // Get the point
@@ -147,12 +232,27 @@ int main() {
     PPMImage* leftImage = readPPM("images/newLeftBW.ppm", 0);
     PPMImage* rightImage = readPPM("images/newRightRectBW.ppm", 0);
 
-    int numPoints = 5000;
-    Point initialPoints[numPoints];
-    Point matchPoints[numPoints];
+    int totalPoints = 1000;
+    Point initialPoints[totalPoints];
+    initialPoints[0] = {imageWidth / 2, imageHeight / 2, -1, 0};
+    int numPoints = 0;
+    Point matchPoints[totalPoints];
 
-    // Generate the first points
-    generatePoints(initialPoints, numPoints, imageWidth, imageHeight);
+    int focusIndex = 0;
+    while(numPoints + 4 < totalPoints) {
+        // Generate a set of new points where its needed
+        generateGridPoints(initialPoints, numPoints, totalPoints, focusIndex);
+
+        // 
+        focusIndex += 1;
+    }
+
+    printf("====\n");
+    for(int i = 0; i < numPoints; i++) {
+        printf("Point: (%d, %d)\n", initialPoints[i + 1].x, initialPoints[i + 1].y);
+    }
+
+    return 0;
 
     Timer matchingTimer;
     matchingTimer.start();

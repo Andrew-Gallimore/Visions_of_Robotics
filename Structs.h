@@ -6,6 +6,7 @@ using namespace std;
 
 struct Point {
     int x, y, z;
+    int layer = 0;
 
     // Define the < operator for Point
     bool operator<(const Point& other) const {
