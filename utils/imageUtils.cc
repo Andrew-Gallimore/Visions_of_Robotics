@@ -157,7 +157,7 @@ void convertJPGToPPM(const char *jpg_filename, const char *ppm_filename) {
     }
 
     // Write the PPM header
-    fprintf(outfile, "P6\n%d %d\n255\n", cinfo.output_width, cinfo.output_height);
+    fprintf(outfile, "P5\n%d %d\n255\n", cinfo.output_width, cinfo.output_height);
 
     // Allocate a buffer to hold one row of pixel data
     row_stride = cinfo.output_width * cinfo.output_components;

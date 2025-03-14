@@ -140,14 +140,14 @@ void calculateDistance(float spacing, float leftOffsetX, float leftCenterX, floa
 
 // Runs the whole matching algorithm
 int main() {
-    convertJPGToPPM("images/newLeft.jpg", "images/newLeft.ppm");
-    convertJPGToPPM("images/newRightRect.jpg", "images/newRightRect.ppm");
-    convertPPMToBW("images/newLeft.ppm", "images/newLeftBW.ppm");
-    convertPPMToBW("images/newRightRect.ppm", "images/newRightRectBW.ppm");
-    PPMImage* leftImage = readPPM("images/newLeftBW.ppm", 0);
-    PPMImage* rightImage = readPPM("images/newRightRectBW.ppm", 0);
+    convertJPGToPPM("images/leftRectified2.jpg", "images/colorTEMP.ppm");
+    convertJPGToPPM("images/rightRectified2.jpg", "images/colorTEMP2.ppm");
+    //convertPPMToBW("images/colorTEMP.ppm", "images/bwTEMP.ppm");
+    //convertPPMToBW("images/colorTEMP2.ppm", "images/bwTEMP2.ppm");
+    PPMImage* leftImage = readPPM("images/colorTEMP.ppm", 0);
+    PPMImage* rightImage = readPPM("images/colorTEMP2.ppm", 0);
 
-    int numPoints = 5000;
+    int numPoints = 12000;
     Point initialPoints[numPoints];
     Point matchPoints[numPoints];
 
@@ -174,14 +174,14 @@ int main() {
     // 0,  fy, Oy
     // 0,  0,  1
     float calibMatrixLeft[9] = {
-        561.85034, 0.00000, 351.88312, 
-        0.00000, 763.06970, 200.38995, 
-        0.00000, 0.00000, 1.00000
+        542.131, 0, 256.252,
+        0, 720.9599, 274.971,
+        0, 0, 1
     };
     float calibMatrixRight[9] = {
-        560.63837, 0.00000, 377.36542, 
-        0.00000, 750.10541, 200.71365, 
-        0.00000, 0.00000, 1.00000 
+        566.5176, 0, 252.2899,
+        0, 753.3832, 218.9708,
+        0, 0, 1 
     };
 
     // Calculate the distances given the two points
@@ -204,7 +204,7 @@ int main() {
 
         // printf("Distance from camera: %f\n", (z - 1100) / 1.7);
         // matchPoints[i].z = (leftPoint.x - rightPoint.x) * 50;
-        matchPoints[i].z = rightPoint.z * 2;
+        matchPoints[i].z = rightPoint.z * 1.6;
 
         // printf("Distance from camera: %f\n", z;
     }
@@ -213,7 +213,7 @@ int main() {
     Timer depthMapTimer;
 
     depthMapTimer.start();
-    DepthMap depthMap(imageWidth, imageHeight, 10, 30.0);
+    DepthMap depthMap(imageWidth, imageHeight, 6, 20.0);
     depthMap.makeDepthMap(matchPoints);
     depthMapTimer.stop();
     // For 100 random-placed points, 30 grid size, 110.0 distance threshold, sigma = 4.0
