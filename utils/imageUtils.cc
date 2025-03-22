@@ -157,6 +157,62 @@ void convertJPGToPPM(const char *jpg_filename, const char *ppm_filename) {
     }
 
     // Write the PPM header
+    fprintf(outfile, "P6\n%d %d\n255\n", cinfo.output_width, cinfo.output_height);
+
+    // Allocate a buffer to hold one row of pixel data
+    row_stride = cinfo.output_width * cinfo.output_components;
+    buffer = (*cinfo.mem->alloc_sarray)((j_common_ptr) &cinfo, JPOOL_IMAGE, row_stride, 1);
+
+    // Read the image data and write to the PPM file
+    while (cinfo.output_scanline < cinfo.output_height) {
+        jpeg_read_scanlines(&cinfo, buffer, 1);
+        fwrite(buffer[0], 1, row_stride, outfile);
+    }
+
+    // Finish the decompression process
+    jpeg_finish_decompress(&cinfo);
+
+    // Clean up
+    fclose(infile);
+    fclose(outfile);
+    jpeg_destroy_decompress(&cinfo);
+}
+
+
+void convertBWJPGToPPM(const char *jpg_filename, const char *ppm_filename) {
+    struct jpeg_decompress_struct cinfo;
+    struct jpeg_error_mgr jerr;
+    FILE *infile;
+    FILE *outfile;
+    JSAMPARRAY buffer;
+    int row_stride;
+
+    // Open the input JPEG file
+    if ((infile = fopen(jpg_filename, "rb")) == NULL) {
+        fprintf(stderr, "Error: cannot open input file %s\n", jpg_filename);
+        exit(1);
+    }
+
+    // Set up error handling
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_decompress(&cinfo);
+
+    // Specify the source of the compressed data (the JPEG file)
+    jpeg_stdio_src(&cinfo, infile);
+
+    // Read the JPEG header to get image info
+    jpeg_read_header(&cinfo, TRUE);
+
+    // Start the decompression process
+    jpeg_start_decompress(&cinfo);
+
+    // Set up the output file
+    if ((outfile = fopen(ppm_filename, "wb")) == NULL) {
+        fprintf(stderr, "Error: cannot open output file %s\n", ppm_filename);
+        exit(1);
+    }
+
+    // Write the PPM header
     fprintf(outfile, "P5\n%d %d\n255\n", cinfo.output_width, cinfo.output_height);
 
     // Allocate a buffer to hold one row of pixel data

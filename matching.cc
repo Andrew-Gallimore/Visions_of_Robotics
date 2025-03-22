@@ -102,12 +102,13 @@ bool generateGridPoints(Point array[], int& numPoints, int totalPoints, int poin
             x,
             y,
             -1,
-            layer
+            layer,
+            0
         };
         
         if(x < 1 || x >= imageWidth || y < 1 || y >= imageHeight) {
+            printf("Point Index: %d\n\n", pointIndex);
             printf("Layer: %d\n", layer);
-            printf("Point Index: %d\n", pointIndex);
             printf("Offset: (%d, %d)\n", offsetX, offsetY);
             printf("Parent point: (%d, %d)\n", array[pointIndex].x, array[pointIndex].y);
             printf("Point: (%d, %d)\n\n", x, y);
@@ -161,9 +162,10 @@ void searchForPoint(Point& point, Point& newPoint, int dir, int imageScaler, int
             }
 
             // Return the best point
-            newPoint.x = point.x + dir * ((bestIndex % windowSize) - (windowSize/2));
+            newPoint.x = point.x + dir * bestIndex * imageScaler;
             newPoint.y = point.y;
             newPoint.z = bestIndex;
+            newPoint.layer = point.layer;
             
             found = true;
         }
@@ -184,9 +186,10 @@ void searchForPoint(Point& point, Point& newPoint, int dir, int imageScaler, int
             }
 
             // Return the best point
-            newPoint.x = point.x + dir * ((bestIndex % windowSize) - (windowSize/2));
+            newPoint.x = point.x + dir * bestIndex * imageScaler;
             newPoint.y = point.y;
             newPoint.z = bestIndex;
+            newPoint.layer = point.layer;
 
             found = true;
         }
@@ -225,51 +228,31 @@ void calculateDistance(float spacing, float leftOffsetX, float leftCenterX, floa
 
 // Runs the whole matching algorithm
 int main() {
-    convertJPGToPPM("images/leftRectified2.jpg", "images/colorTEMP.ppm");
-    convertJPGToPPM("images/rightRectified2.jpg", "images/colorTEMP2.ppm");
-    //convertPPMToBW("images/colorTEMP.ppm", "images/bwTEMP.ppm");
-    //convertPPMToBW("images/colorTEMP2.ppm", "images/bwTEMP2.ppm");
-    PPMImage* leftImage = readPPM("images/colorTEMP.ppm", 0);
-    PPMImage* rightImage = readPPM("images/colorTEMP2.ppm", 0);
+    convertJPGToPPM("images/newLeft.jpg", "images/colorTEMP.ppm");
+    convertJPGToPPM("images/newRightRect.jpg", "images/colorTEMP2.ppm");
+    convertPPMToBW("images/colorTEMP.ppm", "images/bwTEMP.ppm");
+    convertPPMToBW("images/colorTEMP2.ppm", "images/bwTEMP2.ppm");
+    // convertJPGToPPM("images/leftRectified2-adjusted.jpg", "images/bwTEMP.ppm");
+    // convertJPGToPPM("images/rightRectified2.jpg", "images/bwTEMP2.ppm");
 
-    int totalPoints = 1000;
+    PPMImage* leftImage = readPPM("images/bwTEMP.ppm", 0);
+    PPMImage* rightImage = readPPM("images/bwTEMP2.ppm", 0);
+
+    int requiredDiff = 50;
+
+    int totalPoints = 4000;
     Point initialPoints[totalPoints];
-    initialPoints[0] = {imageWidth / 2, imageHeight / 2, -1, 0};
+    initialPoints[0] = {imageWidth / 2, imageHeight / 2, -1, 0, 0};
     int numPoints = 0;
     Point matchPoints[totalPoints];
 
-    int focusIndex = 0;
-    while(numPoints + 4 < totalPoints) {
-        // Generate a set of new points where its needed
-        generateGridPoints(initialPoints, numPoints, totalPoints, focusIndex);
+    // Que for the points to focus on
+    int que[totalPoints] = {0};
+    int queStart = 0;
+    int queEnd = 0;
 
-        // 
-        focusIndex += 1;
-    }
-
-    printf("====\n");
-    for(int i = 0; i < numPoints; i++) {
-        printf("Point: (%d, %d)\n", initialPoints[i + 1].x, initialPoints[i + 1].y);
-    }
-
-    return 0;
-
-    Timer matchingTimer;
-    matchingTimer.start();
-
-    // Search for the points in the right image
-    for(int i = 0; i < numPoints; i++) {
-        Point& point = initialPoints[i];
-        Point newPoint = {-1000000, -1000000, -1000000};
-
-        searchForPoint(point, newPoint, -1, 3, 9, leftImage, rightImage);
-
-        matchPoints[i] = newPoint;
-    }
-
-    matchingTimer.stop();
-
-    // Got from running calibration on the images
+    // For calculating depth
+    // These are gotten from running calibration on the images
     // fx, 0,  Ox
     // 0,  fy, Oy
     // 0,  0,  1
@@ -284,37 +267,209 @@ int main() {
         0, 0, 1 
     };
 
-    // Calculate the distances given the two points
-    float spacing = 60.0; // mm
+    Timer matchingTimer;
+    matchingTimer.start();
 
-    // Calculate the distance between the two cameras
-    for(int i = 0; i < numPoints; i++) {
-        Point& leftPoint = initialPoints[i];
-        Point& rightPoint = matchPoints[i];
+    int focusIndex = 0;
+    while(numPoints + 4 < totalPoints) {
+        // Generate a set of new points where its needed
+        // generateGridPoints(initialPoints, numPoints, totalPoints, focusIndex);
 
-        // printf("Left/right point: (%d, %d)\n", leftPoint.x, rightPoint.x);
+        // printf("Focus Index: %d\n", queStart);    
+        // printf("Que End: %d\n", queEnd);    
+        
+        // Generating a new set of points where its needed in the que
+        if(queStart <= queEnd) {
+            generateGridPoints(initialPoints, numPoints, totalPoints, que[queStart]);
+            queStart += 1;
+        }
+        printf("Num Points: %d\n", numPoints);
 
-        // Calculate the distance between the two points
-        float z = 0;
-        // calculateDistance(spacing, leftPoint.x, calibMatrixLeft[2], calibMatrixLeft[0], 
-        //                            rightPoint.x, calibMatrixRight[2], calibMatrixRight[0], z);
+        // Search for the points in the right image
+        for(int i = 0; i < 4; i++) {
+            Point& point = initialPoints[numPoints - 4 + i];
+            Point newPoint = {-1000000, -1000000, -1000000};
 
-        // Set the z value in the point
-        // matchPoints[i].z = (z - 1000) / 3;
+            searchForPoint(point, newPoint, -1, 3, 9, leftImage, rightImage);
 
-        // printf("Distance from camera: %f\n", (z - 1100) / 1.7);
-        // matchPoints[i].z = (leftPoint.x - rightPoint.x) * 50;
-        matchPoints[i].z = rightPoint.z * 1.6;
+            matchPoints[numPoints - 4 + i] = newPoint;
+        }
 
-        // printf("Distance from camera: %f\n", z;
+        // Simulate the depth of the points
+        int depth[4] = {0, 0, 0, 0};
+        for(int i = 0; i < 4; i++) {
+            // depth[i] = matchPoints[numPoints - 4 + i].z * 15;
+            float z = 0;
+            calculateDistance(60, 
+                initialPoints[numPoints - 4 + i].x, 
+                    calibMatrixLeft[2], calibMatrixLeft[0], 
+                matchPoints[numPoints - 4 + i].x, 
+                    calibMatrixRight[2], calibMatrixRight[0], z);
+            
+            // Set the z value in the point
+            matchPoints[numPoints - 4 + i].z = z / 5;
+            depth[i] = z / 5;
+            // printf("Depth: %f\n", z / 5);
+        }
+
+        /* Layout:
+            0 1
+            2 3
+        */
+        // Check if we have enough difference between the neiboring points
+        bool needsFocus[4] = {false, false, false, false};
+        if(matchPoints[que[queStart - 1]].layer < 2) {
+            // We are not at the last layer, so we should focus on the points
+            needsFocus[0] = true;
+            needsFocus[1] = true;
+            needsFocus[2] = true;
+            needsFocus[3] = true;
+        }else {
+            if(abs(depth[0] - depth[1]) > requiredDiff) {
+                printf("Depth diff: %d\n", abs(depth[0] - depth[1]));
+                // We have enough difference between the points
+                // We should focus on this point
+                needsFocus[0] = true;
+                matchPoints[numPoints - 4 + 0].dyingBreath = 0;
+            }else {
+                // We don't have enough difference between the points, but we should still focus on this point an extra time, encase there is more detail
+                // printf("Dying breath: %d\n", matchPoints[que[queStart - 1]].dyingBreath);
+                if(matchPoints[que[queStart - 1]].dyingBreath < 1) {
+                    needsFocus[0] = true;
+                    matchPoints[numPoints - 4 + 0].dyingBreath += 1;
+                }
+            }
+            if(abs(depth[2] - depth[3]) > requiredDiff) {
+                // We have enough difference between the points
+                // We should focus on this point
+                needsFocus[1] = true;
+                matchPoints[numPoints - 4 + 1].dyingBreath = 0;
+            }else {
+                // We don't have enough difference between the points, but we should still focus on this point an extra time, encase there is more detail
+                if(matchPoints[que[queStart - 1]].dyingBreath < 1) {
+                    needsFocus[1] = true;
+                    matchPoints[numPoints - 4 + 1].dyingBreath += 1;
+                }
+            }
+            if(abs(depth[0] - depth[2]) > requiredDiff) {
+                // We have enough difference between the points
+                // We should focus on this point
+                needsFocus[2] = true;
+                matchPoints[numPoints - 4 + 2].dyingBreath = 0;
+            }else {
+                // We don't have enough difference between the points, but we should still focus on this point an extra time, encase there is more detail
+                if(matchPoints[que[queStart - 1]].dyingBreath < 1) {
+                    needsFocus[2] = true;
+                    matchPoints[numPoints - 4 + 2].dyingBreath += 1;
+                }
+            }
+            if(abs(depth[1] - depth[3]) > requiredDiff) {
+                // We have enough difference between the points
+                // We should focus on this point
+                needsFocus[3] = true;
+                matchPoints[numPoints - 4 + 3].dyingBreath = 0;
+            }else {
+                // We don't have enough difference between the points, but we should still focus on this point an extra time, encase there is more detail
+                if(matchPoints[que[queStart - 1]].dyingBreath < 1) {
+                    needsFocus[3] = true;
+                    matchPoints[numPoints - 4 + 3].dyingBreath += 1;
+                }
+            }
+        }
+
+        // Enqueue the points that need focus
+        if(queEnd + 4 < totalPoints) {
+            // Add the point to the que
+            for(int i = 0; i < 4; i++) {
+                if(needsFocus[i]) {
+                    que[queEnd] = numPoints - 4 + i;
+                    queEnd += 1;
+                }
+            }
+            printf("Que End: %d\n", queEnd);
+        }
+
+        // // Calculate the depth for all the new points
+        // for(int i = 0; i < 4; i++) {
+        //     Point& leftPoint = initialPoints[numPoints - 4 + i];
+        //     Point& rightPoint = matchPoints[numPoints -4 + i];
+
+        //     // Calculate the distance between the two points
+        //     float z = 0;
+        //     calculateDistance(60.0, leftPoint.x, 256.252, 542.131, 
+        //                               rightPoint.x, 252.2899, 566.5176, z);
+
+        //     // Set the z value in the point
+        //     matchPoints[numPoints - 4 + i].z = (z - 1100) / 1.7;
+        // }
+
+        // If we have enough difference between any points, we add them to the stack of points to focus on
+            // Set focusIndex to the new point
+        // If we don't have enough difference, we continue to the next point
+        focusIndex += 1;
     }
 
+    printf("====\n");
+    // for(int i = 0; i < numPoints; i++) {
+    //     printf("Point: (%d, %d)\n", initialPoints[i + 1].x, initialPoints[i + 1].y);
+    // }
+
+
+    // Search for the points in the right image
+    // for(int i = 0; i < numPoints; i++) {
+    //     Point& point = initialPoints[i];
+    //     Point newPoint = {-1000000, -1000000, -1000000};
+
+    //     searchForPoint(point, newPoint, -1, 3, 9, leftImage, rightImage);
+
+    //     matchPoints[i] = newPoint;
+    // }
+
+    matchingTimer.stop();
+
+    
+    // Calculate the distances given the two points
+    float spacing = 60.0; // mm
+    
+    // // Calculate the distance between the two cameras
+    // for(int i = 0; i < numPoints; i++) {
+    //     Point& leftPoint = initialPoints[i];
+    //     Point& rightPoint = matchPoints[i];
+        
+    //     // printf("Left/right point: (%d, %d)\n", leftPoint.x, rightPoint.x);
+        
+    //     // // Calculate the distance between the two points
+    //     // float z = 0;
+    //     // calculateDistance(spacing, leftPoint.x, calibMatrixLeft[2], calibMatrixLeft[0], 
+    //     //                            rightPoint.x, calibMatrixRight[2], calibMatrixRight[0], z);
+        
+    //     // // Set the z value in the point
+    //     // matchPoints[i].z = z / 15;
+    //     // if(i > 2000 && i < 2100) {
+    //         //     printf("X diff: %d\n", leftPoint.x - rightPoint.x);
+    //     //     printf("Distance from camera: %f\n\n", z / 15);
+    //     // }
+        
+    //     // printf("Distance from camera: %f\n", (abs(z) - 1100) / 200);
+    //     // matchPoints[i].z = (leftPoint.x - rightPoint.x) * 50;
+    //     matchPoints[i].z = rightPoint.z * 1.6;
+        
+    //     // printf("Distance from camera: %f\n", z;
+    // }
+
+    for(int i = 0; i < numPoints; i++) {
+        initialPoints[i].z = matchPoints[i].z;
+        initialPoints[i].layer = matchPoints[i].layer;
+    }
+    
 
     Timer depthMapTimer;
 
     depthMapTimer.start();
-    DepthMap depthMap(imageWidth, imageHeight, 6, 20.0);
-    depthMap.makeDepthMap(matchPoints);
+    DepthMap depthMap(imageWidth, imageHeight, 50, 30.0);
+    // depthMap.makeDepthMap(matchPoints, numPoints);
+    depthMap.drawPoints(initialPoints, numPoints);
+    depthMap.makeQuadDepthMap(initialPoints, numPoints);
     depthMapTimer.stop();
     // For 100 random-placed points, 30 grid size, 110.0 distance threshold, sigma = 4.0
     // For 400 random-placed points, 40 grid size, 40 to 60 distance threshold (at 400 points, distance between them is 36), sigma = 3 to 4

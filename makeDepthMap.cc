@@ -27,16 +27,22 @@ DepthMap::~DepthMap() {
     delete[] cellPointCounts;
 }
 
-void DepthMap::populateGrid(Point points[]) {
-    printf("Populating grid\n");
+void DepthMap::populateGrid(Point points[], int numPoints) {
+    printf("Populating grid (%d cells)\n", gridWidth * gridHeight);
     // Populate the grid with points
-    for(int i = 0; i < gridWidth * gridHeight; i++) {
+    for(int i = 0; i < numPoints; i++) {
         Point point = points[i];
 
         int gridX = point.x / gridSize;
         int gridY = point.y / gridSize;
         int cellIndex = gridY * gridWidth + gridX;
         int newCount = cellPointCounts[cellIndex] + 1;
+
+        // printf("Cell index: %d\n", cellIndex);
+        if(cellIndex >= gridWidth * gridHeight) {
+            printf("!!!! Out of bounds\n");
+            break;
+        }
 
         if(newCount >= maxPointsPerCell * 0.8) {
             // printf("Point: (%d, %d) index %d\n", point.x, point.y, i);
@@ -46,6 +52,8 @@ void DepthMap::populateGrid(Point points[]) {
         if (newCount < maxPointsPerCell) {
             grid[cellIndex * maxPointsPerCell + newCount] = point;
             cellPointCounts[cellIndex] = newCount;
+        }else {
+            printf("!!!! Too many points in cell: %d\n", newCount);
         }
     }
     printf("Done populating grid\n");
@@ -90,7 +98,7 @@ void DepthMap::getLocalPoints(int pixelX, int pixelY, Point nearbyPoints[], int&
     }
 }
 
-void DepthMap::makeDepthMap(Point points[]) {
+void DepthMap::makeDepthMap(Point points[], int numPoints) {
     // Variables
     int maxColor = 255;
     int imagePixels = imageWidth * imageHeight;
@@ -101,7 +109,7 @@ void DepthMap::makeDepthMap(Point points[]) {
     printf("Here\n");
     
     // First, populate the grid with the points
-    populateGrid(points);
+    populateGrid(points, numPoints);
 
     printf("Here2\n");
     
@@ -165,6 +173,99 @@ void DepthMap::makeDepthMap(Point points[]) {
 
     // Write the image to a file
     writePPM("depthMap.ppm", imageWidth, imageHeight, maxColor, 0, imageData);
+
+    // Free the allocated memory
+    free(imageData);
+}
+
+void DepthMap::makeQuadDepthMap(Point points[], int numPoints) {
+    // Image variables
+    int maxColor = 255;
+    int imagePixels = imageWidth * imageHeight;
+    unsigned char *imageData = (unsigned char *)malloc(imagePixels * sizeof(unsigned char));
+
+    // Loop over all the points
+    for(int i = 0; i < numPoints; i++) {
+        Point point = points[i];
+        int x = point.x;
+        int y = point.y;
+        int z = point.z;
+        int layer = point.layer;
+
+        // Calculate the bounds of the quadtree cell
+        int cellSizeX = imageWidth / pow(2, layer + 1);
+        int cellSizeY = imageHeight / pow(2, layer + 1);
+        int cellX = (x / cellSizeX) * cellSizeX;
+        int cellY = (y / cellSizeY) * cellSizeY;
+
+        // if(i == 85) {
+        //     printf("Point: (%d, %d), layer: %d\n", x, y, layer);
+        //     printf("Cell size: (%d x %d)\n", cellSizeX, cellSizeY);
+        //     printf("Cell: (%d, %d)\n", cellX, cellY);
+        // }
+
+        // Print out last points
+        // if(i >= numPoints - 2) {
+        //     printf("Cell Size: (%d, %d)\n", cellSizeX, cellSizeY);
+        //     printf("Point: (%d, %d)\n", x, y);
+        //     printf("Cell: (%d, %d)\n\n", cellX, cellY);
+        // }
+
+        // Set the color of the pixels in the cell
+        for(int j = 0; j < cellSizeX * cellSizeY; j++) {
+            int pixelX = cellX + (j % cellSizeX);
+            int pixelY = cellY + (j / cellSizeX);
+            int pixelIndex = pixelY * imageWidth + pixelX;
+
+            if (pixelIndex < imagePixels) {
+                imageData[pixelIndex] = z;
+                // if(i >= numPoints - 4) {
+                //     imageData[pixelIndex] = i * (255.0 / numPoints);
+                // }else {
+                //     imageData[pixelIndex] = 0;
+                // }
+            }
+        }
+    }
+
+    // Write the image to a file
+    writePPM("depthMap.ppm", imageWidth, imageHeight, maxColor, 0, imageData);
+
+    // Free the allocated memory
+    free(imageData);
+}
+
+void DepthMap::drawPoints(Point points[], int numPoints) {
+    // Image variables
+    int maxColor = 255;
+    int imagePixels = imageWidth * imageHeight;
+    unsigned char *imageData = (unsigned char *)malloc(imagePixels * sizeof(unsigned char));
+
+    // Loop over all the points
+    for(int i = 0; i < numPoints; i++) {
+        Point point = points[i];
+        int x = point.x;
+        int y = point.y;
+
+        int value = i * (255.0 / numPoints);
+        // if(i >= numPoints - 4) {
+        //     printf("Dot: (%d, %d)\n", x, y);
+        //     value = 255;
+        // }
+
+        // Set the color of the pixel
+        int pixelIndex = y * imageWidth + x;
+        if (pixelIndex < imagePixels) {
+            imageData[pixelIndex] = value;
+            imageData[pixelIndex + 1] = value;
+            imageData[pixelIndex - 1] = value;
+            imageData[pixelIndex + imageWidth] = value;
+            imageData[pixelIndex - imageWidth] = value;
+        }
+    }
+
+    // Write the image to a file
+    writePPM("imagePoints.ppm", imageWidth, imageHeight, maxColor, 0, imageData);
 
     // Free the allocated memory
     free(imageData);
