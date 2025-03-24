@@ -140,14 +140,14 @@ void calculateDistance(float spacing, float leftOffsetX, float leftCenterX, floa
 
 // Runs the whole matching algorithm
 int main() {
-    convertJPGToPPM("images/leftRectified2.jpg", "images/colorTEMP.ppm");
+    convertJPGToPPM("images/leftRectified2-adjusted.jpg", "images/colorTEMP.ppm");
     convertJPGToPPM("images/rightRectified2.jpg", "images/colorTEMP2.ppm");
     //convertPPMToBW("images/colorTEMP.ppm", "images/bwTEMP.ppm");
     //convertPPMToBW("images/colorTEMP2.ppm", "images/bwTEMP2.ppm");
     PPMImage* leftImage = readPPM("images/colorTEMP.ppm", 0);
     PPMImage* rightImage = readPPM("images/colorTEMP2.ppm", 0);
 
-    int numPoints = 12000;
+    int numPoints = 1000;
     Point initialPoints[numPoints];
     Point matchPoints[numPoints];
 
@@ -192,19 +192,17 @@ int main() {
         Point& leftPoint = initialPoints[i];
         Point& rightPoint = matchPoints[i];
 
-        // printf("Left/right point: (%d, %d)\n", leftPoint.x, rightPoint.x);
-
-        // Calculate the distance between the two points
+        // Calculate the depth based on the distance between the two points
         float z = 0;
-        // calculateDistance(spacing, leftPoint.x, calibMatrixLeft[2], calibMatrixLeft[0], 
-        //                            rightPoint.x, calibMatrixRight[2], calibMatrixRight[0], z);
+        calculateDistance(spacing, leftPoint.x, calibMatrixLeft[2], calibMatrixLeft[0], 
+                                   rightPoint.x, calibMatrixRight[2], calibMatrixRight[0], z);
 
         // Set the z value in the point
-        // matchPoints[i].z = (z - 1000) / 3;
+        matchPoints[i].z = z / 100;
 
         // printf("Distance from camera: %f\n", (z - 1100) / 1.7);
         // matchPoints[i].z = (leftPoint.x - rightPoint.x) * 50;
-        matchPoints[i].z = rightPoint.z * 1.6;
+        // matchPoints[i].z = rightPoint.z * 1.6;
 
         // printf("Distance from camera: %f\n", z;
     }
