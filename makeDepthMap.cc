@@ -27,16 +27,46 @@ DepthMap::~DepthMap() {
     delete[] cellPointCounts;
 }
 
-void DepthMap::populateGrid(Point points[]) {
-    printf("Populating grid\n");
+// void DepthMap::populateGrid(Point points[]) {
+//     printf("Populating grid\n");
+//     // Populate the grid with points
+//     for(int i = 0; i < gridWidth * gridHeight; i++) {
+//         Point point = points[i];
+
+//         int gridX = point.x / gridSize;
+//         int gridY = point.y / gridSize;
+//         int cellIndex = gridY * gridWidth + gridX;
+//         int newCount = cellPointCounts[cellIndex] + 1;
+
+//         if(newCount >= maxPointsPerCell * 0.8) {
+//             // printf("Point: (%d, %d) index %d\n", point.x, point.y, i);
+//             printf("!!!! Too many points in cell: %d\n", newCount);
+//             break;
+//         }
+//         if (newCount < maxPointsPerCell) {
+//             grid[cellIndex * maxPointsPerCell + newCount] = point;
+//             cellPointCounts[cellIndex] = newCount;
+//         }
+//     }
+//     printf("Done populating grid\n");
+// }
+
+void DepthMap::populateGrid(Point points[], int numPoints) {
+    printf("Populating grid (%d cells)\n", gridWidth * gridHeight);
     // Populate the grid with points
-    for(int i = 0; i < gridWidth * gridHeight; i++) {
+    for(int i = 0; i < numPoints; i++) {
         Point point = points[i];
 
         int gridX = point.x / gridSize;
         int gridY = point.y / gridSize;
         int cellIndex = gridY * gridWidth + gridX;
         int newCount = cellPointCounts[cellIndex] + 1;
+
+        // printf("Cell index: %d\n", cellIndex);
+        if(cellIndex >= gridWidth * gridHeight) {
+            printf("!!!! Out of bounds\n");
+            break;
+        }
 
         if(newCount >= maxPointsPerCell * 0.8) {
             // printf("Point: (%d, %d) index %d\n", point.x, point.y, i);
@@ -46,6 +76,8 @@ void DepthMap::populateGrid(Point points[]) {
         if (newCount < maxPointsPerCell) {
             grid[cellIndex * maxPointsPerCell + newCount] = point;
             cellPointCounts[cellIndex] = newCount;
+        }else {
+            printf("!!!! Too many points in cell: %d\n", newCount);
         }
     }
     printf("Done populating grid\n");
@@ -90,7 +122,7 @@ void DepthMap::getLocalPoints(int pixelX, int pixelY, Point nearbyPoints[], int&
     }
 }
 
-void DepthMap::makeDepthMap(Point points[]) {
+void DepthMap::makeDepthMap(Point points[], int numPoints) {
     // Variables
     int maxColor = 255;
     int imagePixels = imageWidth * imageHeight;
@@ -101,7 +133,7 @@ void DepthMap::makeDepthMap(Point points[]) {
     printf("Here\n");
     
     // First, populate the grid with the points
-    populateGrid(points);
+    populateGrid(points, numPoints);
 
     printf("Here2\n");
     
