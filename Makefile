@@ -11,14 +11,18 @@ TEST_SRCS = utils/utilsTest.cc utils/vectorUtils.cc utils/matrixUtils.cc
 QR_SRCS = qrDecomp.cc utils/vectorUtils.cc matrixUtils.cc
 CALIB_SRCS = calib.cc calibFile.cc utils/vectorUtils.cc utils/matrixUtils.cc
 MATCHING_SRCS = matching.cc utils/imageUtils.cc utils/timer.cc makeDepthMap.cc
-MATCHING_P_SRCS = matchingP.cu utils/imageUtils.cc utils/timer.cc makeDepthMap.cc
 
-# Object files (replace .cc with .o)
+# Separate .cc and .cu source files for matchingP
+MATCHING_P_CC_SRCS = utils/imageUtils.cc utils/timer.cc makeDepthMap.cc
+MATCHING_P_CU_SRCS = matchingP2.cu
+
+# Object files
 TEST_OBJS = $(TEST_SRCS:.cc=.o)
 QR_OBJS = $(QR_SRCS:.cc=.o)
 CALIB_OBJS = $(CALIB_SRCS:.cc=.o)
 MATCHING_OBJS = $(MATCHING_SRCS:.cc=.o)
-MATCHING_P_OBJS = $(MATCHING_P_SRCS:.cu=.o)
+MATCHING_P_CC_OBJS = $(MATCHING_P_CC_SRCS:.cc=.o)
+MATCHING_P_CU_OBJS = $(MATCHING_P_CU_SRCS:.cu=.o)
 
 # Output executables
 TEST_TARGET = tests
@@ -27,7 +31,7 @@ CALIB_TARGET = calib
 MATCHING_TARGET = matching
 MATCHING_P_TARGET = matchingP
 
-# Generic rule to build the final executable
+# Rules to build the final executables
 $(TEST_TARGET): $(TEST_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(TEST_OBJS)
 
@@ -40,18 +44,20 @@ $(CALIB_TARGET): $(CALIB_OBJS)
 $(MATCHING_TARGET): $(MATCHING_OBJS)
 	$(CC) $(CFLAGS) -o $@ $(MATCHING_OBJS) -ljpeg
 
-$(MATCHING_P_TARGET): $(MATCHING_P_SRCS)
-	$(NVCC) $(CUDAFLAGS) -o $@ $(MATCHING_P_SRCS) -ljpeg
+$(MATCHING_P_TARGET): $(MATCHING_P_CC_OBJS) $(MATCHING_P_CU_OBJS)
+	$(NVCC) $(CUDAFLAGS) -o $@ $(MATCHING_P_CC_OBJS) $(MATCHING_P_CU_OBJS) -ljpeg
 
-# Rule to build object files
+# Rule to build object files from .cc files
 %.o: %.cc
 	$(CC) $(CFLAGS) -c $< -o $@
+
+# Rule to build object files from .cu files
 %.o: %.cu
 	$(NVCC) $(CUDAFLAGS) -c $< -o $@
 
 # Clean rule
 clean:
-	rm -f $(MATCHING_OBJS) $(TEST_OBJS) $(QR_OBJS) $(CALIB_OBJS) $(MATCHING_TARGET) $(TEST_TARGET) $(QR_TARGET) $(CALIB_TARGET) $(MATCHING_P_TARGET)
+	rm -f *.o $(TEST_TARGET) $(QR_TARGET) $(CALIB_TARGET) $(MATCHING_TARGET) $(MATCHING_P_TARGET)
 
 # Generic run rule
 run: $(TARGET)

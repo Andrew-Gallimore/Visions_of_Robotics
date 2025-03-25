@@ -5,6 +5,8 @@
 #include "makeDepthMap.h"
 #include "utils/timer.h"
 #include "Structs.h"
+#include "matchingP2.h"
+#include <cuda_runtime.h>
 
 using namespace std;
 
@@ -33,44 +35,70 @@ void generatePoints(Point array[], int numPoints, int imageWidth, int imageHeigh
     }
 }
 
-void sampleWindow(int* window, int windowSize, int imageScale, int x, int y, PPMImage* image) {
-    for(int i = 0; i < windowSize * windowSize; i++) {
-        // Get the point
-        int sampleX = x + ((i % windowSize) - (windowSize/2)) * imageScale;
-        int sampleY = y + ((i / windowSize) - (windowSize/2)) * imageScale;
-        if(sampleX < 0 || sampleX >= image->width || sampleY < 0 || sampleY >= image->height) {
-            // Out of bounds
-            window[i] = -1;
-            continue;
-        }
-        window[i] = image->data[sampleY * image->width + sampleX];
+void calculateDistance(float baseline, float focalLength, float disparity, float& depth) {
+    if (disparity == 0) {
+        depth = -1; // Handle division by zero (no depth information)
+        return;
     }
+    depth = (baseline * focalLength) / disparity;
 }
 
-void searchForPoint(Point& point, Point& newPoint, int dir, int imageScaler, int windowSize, PPMImage* leftImage, PPMImage* rightImage) {
+
+
+__global__ void searchForPoints(Point* initialPoints, Point* matchPoints, int numPoints, int imageScalar, int windowSize, unsigned char* leftImage, unsigned char* rightImage, int d_imageWidth, int d_imageHeight) {
+    int index = blockIdx.x * blockDim.x + threadIdx.x;
+    if (index >= numPoints) {
+        return;
+    }
+
+    // Getting the point for this thread
+    Point point = initialPoints[index];
+
     // We assume the images are rectified, so we only need to search in x direction
     int itterations = 200;
 
     // Make left window of points to check with
     // Window should be centered around the point
-    int window[windowSize * windowSize];
-    int checkWindow[windowSize * windowSize];
-    sampleWindow(window, windowSize, imageScaler, point.x, point.y, leftImage);
+    int window[81];
+    int checkWindow[81];
+    for(int j = 0; j < windowSize * windowSize; j++) {
+        // Get the point
+        int sampleX = point.x + ((j % windowSize) - (windowSize/2)) * imageScalar;
+        int sampleY = point.y + ((j / windowSize) - (windowSize/2)) * imageScalar;
+        if(sampleX < 0 || sampleX >= d_imageWidth || sampleY < 0 || sampleY >= d_imageHeight) {
+            // Out of bounds
+            window[j] = -1;
+            continue;
+        }
+        window[j] = leftImage[sampleY * d_imageWidth + sampleX];
+    }
     
     // Keep track of the points we have checked
-    int pointDifferences[itterations];
-    fill_n(pointDifferences, itterations, -1);
+    int pointDifferences[200];
+    for(int i = 0; i < 200; i++) {
+        pointDifferences[i] = -1;
+    }
 
     // Sample all the windows for the number of itterations
     for(int i = 0; i < itterations; i++) {
         // Stop if we are out of bounds
-        if ((point.x + dir * i) < windowSize / 2 || (point.x + dir * i) >= leftImage->width - windowSize / 2) {
+        if ((point.x - i) < windowSize / 2 || (point.x - i) >= d_imageWidth - windowSize / 2) {
             continue;
         }
 
         // Get right window of point to check against
-        int samplePoint = point.x + dir * i;
-        sampleWindow(checkWindow, windowSize, imageScaler, samplePoint, point.y, rightImage);
+        int samplePoint = point.x - i;
+        for(int j = 0; j < windowSize * windowSize; j++) {
+            // Get the point
+            int sampleX = samplePoint + ((j % windowSize) - (windowSize/2)) * imageScalar;
+            int sampleY = point.y + ((j / windowSize) - (windowSize/2)) * imageScalar;
+            if(sampleX < 0 || sampleX >= d_imageWidth || sampleY < 0 || sampleY >= d_imageHeight) {
+                // Out of bounds
+                checkWindow[j] = -1;
+                continue;
+            }
+            checkWindow[j] = rightImage[sampleY * d_imageWidth + sampleX];
+        }
 
         // Compare the two windows
         int diffSum = 0;
@@ -96,20 +124,14 @@ void searchForPoint(Point& point, Point& newPoint, int dir, int imageScaler, int
     }
 
     // Return the best point
-    newPoint.x = point.x + dir * bestIndex;
-    newPoint.y = point.y;
-    newPoint.z = bestIndex;
+    matchPoints[index].x = point.x - bestIndex;
+    matchPoints[index].y = point.y;
+    matchPoints[index].z = bestIndex;
 }
 
-void calculateDistance(float baseline, float focalLength, float disparity, float& depth) {
-    if (disparity == 0) {
-        depth = -1; // Handle division by zero (no depth information)
-        return;
-    }
-    depth = (baseline * focalLength) / disparity;
-}
 
-// ==== Starting Function for Algorithm ====
+
+
 
 // Runs the whole matching algorithm
 int main() {
@@ -130,17 +152,28 @@ int main() {
     Timer matchingTimer;
     matchingTimer.start();
 
-    // Search for the points in the right image
-    for(int i = 0; i < numPoints; i++) {
-        Point& point = initialPoints[i];
-        Point newPoint = {-1000000, -1000000, -1000000};
+    // Setting up memeory in the GPU
+    Point* d_initialPoints;
+    Point* d_matchPoints;
+    cudaMalloc(&d_initialPoints, sizeof(Point) * numPoints);
+    cudaMalloc(&d_matchPoints, sizeof(Point) * numPoints);
+    cudaMemcpy(d_initialPoints, initialPoints, sizeof(Point) * numPoints, cudaMemcpyHostToDevice);
+    
+    unsigned char* d_leftImage;
+    unsigned char* d_rightImage;
+    cudaMalloc(&d_leftImage, sizeof(char) * leftImage->width * leftImage->height);
+    cudaMalloc(&d_rightImage, sizeof(char) * rightImage->width * rightImage->height);
+    cudaMemcpy(d_leftImage, leftImage->data, sizeof(char) * leftImage->width * leftImage->height, cudaMemcpyHostToDevice);
+    cudaMemcpy(d_rightImage, rightImage->data, sizeof(char) * rightImage->width * rightImage->height, cudaMemcpyHostToDevice);
 
-        searchForPoint(point, newPoint, -1, 3, 12, leftImage, rightImage);
+    int threadsPerBlock = 256; // Number of threads per block
+    int numBlocks = (numPoints + threadsPerBlock - 1) / threadsPerBlock; // Number of blocks
+    
+    // Run the kernel
+    searchForPoints<<<numBlocks, threadsPerBlock>>>(d_initialPoints, d_matchPoints, numPoints, 3, 9, d_leftImage, d_rightImage, leftImage->width, leftImage->height);
 
-        // printf("Point: (%d, %d), New Point: (%d, %d)\n", point.x, point.y, newPoint.x, newPoint.y);
-
-        matchPoints[i] = newPoint;
-    }
+    // Copy the data back
+    cudaMemcpy(matchPoints, d_matchPoints, sizeof(Point) * numPoints, cudaMemcpyDeviceToHost);
 
     matchingTimer.stop();
 
