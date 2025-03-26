@@ -5,7 +5,6 @@
 #include "makeDepthMap.h"
 #include "utils/timer.h"
 #include "Structs.h"
-#include "matchingP2.h"
 #include <cuda_runtime.h>
 
 using namespace std;
@@ -142,7 +141,7 @@ int main() {
     PPMImage* leftImage = readPPM("images/colorTEMP.ppm", 0);
     PPMImage* rightImage = readPPM("images/colorTEMP2.ppm", 0);
 
-    int numPoints = 15000;
+    int numPoints = 30000;
     Point initialPoints[numPoints];
     Point matchPoints[numPoints];
 
@@ -169,8 +168,13 @@ int main() {
     int threadsPerBlock = 256; // Number of threads per block
     int numBlocks = (numPoints + threadsPerBlock - 1) / threadsPerBlock; // Number of blocks
     
+    
     // Run the kernel
+    Timer kernalTimer;
+    kernalTimer.start();
     searchForPoints<<<numBlocks, threadsPerBlock>>>(d_initialPoints, d_matchPoints, numPoints, 3, 9, d_leftImage, d_rightImage, leftImage->width, leftImage->height);
+    kernalTimer.stop();
+
 
     // Copy the data back
     cudaMemcpy(matchPoints, d_matchPoints, sizeof(Point) * numPoints, cudaMemcpyDeviceToHost);
@@ -211,24 +215,15 @@ int main() {
         calculateDistance(spacing, (calibMatrixLeft[0] + calibMatrixRight[0]) / 2, disparity, depth);
 
         // Set the z value in the point
-        depth = (depth + 300) / 20; // Convert to meters and scale to fit the image
+        depth = (depth + 300) / 20; // Convert to something within the range of 0-255, mostly
         initialPoints[i].z = depth;
-
-        // printf("Distance from camera: %f\n", abs(z));
-        printf("Left x: %d, Right x: %d, Z: %f\n", leftPoint.x, rightPoint.x, depth);
-
-        // printf("Distance from camera: %f\n", (z - 1100) / 1.7);
-        // matchPoints[i].z = (leftPoint.x - rightPoint.x) * 50;
-        // matchPoints[i].z = rightPoint.z * 1.6;
-
-        // printf("Distance from camera: %f\n", z;
     }
 
 
     Timer depthMapTimer;
 
     depthMapTimer.start();
-    DepthMap depthMap(imageWidth, imageHeight, 4, 15.0);
+    DepthMap depthMap(imageWidth, imageHeight, 5, 10.0);
     // DepthMap depthMap(imageWidth, imageHeight, 10, 20.0);
     depthMap.makeDepthMap(initialPoints, numPoints);
     depthMapTimer.stop();
@@ -244,7 +239,8 @@ int main() {
 
     // Printing out the timeing
     printf("\n");
-    printf("Matching time: %d ms\n", (int)matchingTimer.elapsedMilliseconds());
+    printf("Kernal time: %d ms\n", (int)kernalTimer.elapsedMilliseconds());
+    printf("Full Matching time: %d ms\n", (int)matchingTimer.elapsedMilliseconds());
     printf("Depth map time: %d ms\n", (int)depthMapTimer.elapsedMilliseconds());
     printf("Total time: %d ms\n", (int)(depthMapTimer.elapsedMilliseconds() + matchingTimer.elapsedMilliseconds()));
 

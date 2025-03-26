@@ -9,6 +9,7 @@ settings.json
 calib
 tests
 matching
+matchingCuda
 
 # Not-original images (*.ppm) in images folder
 images/*.ppm
