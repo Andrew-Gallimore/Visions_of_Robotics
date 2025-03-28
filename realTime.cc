@@ -63,6 +63,12 @@ while(1) {
 	        rectifiedRight.data
 	};  
 
+	for(int i = (left.width * left.height) - 1; i >= 0; i--) {
+		int newIndex = i + left.width * 21;
+		if(newIndex < left.width * left.height) {
+			right.data[newIndex] = right.data[i];
+		}
+	}
 	PPMImage depthMap = {
                 capR.get(CAP_PROP_FRAME_WIDTH),
                 capR.get(CAP_PROP_FRAME_HEIGHT),

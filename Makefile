@@ -1,7 +1,6 @@
 # Compiler
 CC = gcc 
-# NVCC = /usr/local/cuda/bin/nvcc
-NVCC = nvcc
+NVCC = /usr/local/cuda/bin/nvcc
 
 # Compiler flags
 CCFLAGS =  -I/usr/include/opencv4 
