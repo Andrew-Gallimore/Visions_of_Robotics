@@ -122,7 +122,7 @@ void DepthMap::getLocalPoints(int pixelX, int pixelY, Point nearbyPoints[], int&
     }
 }
 
-void DepthMap::makeDepthMap(Point points[], int numPoints) {
+void DepthMap::makeDepthMap(Point points[], int numPoints, PPMImage* depthMapOutput) {
     // Variables
     int maxColor = 255;
     int imagePixels = imageWidth * imageHeight;
@@ -196,7 +196,13 @@ void DepthMap::makeDepthMap(Point points[], int numPoints) {
     printf("Average number of checked local points: %d\n", averageCheckedLocalPoints / imagePixels);
 
     // Write the image to a file
-    writePPM("depthMap.ppm", imageWidth, imageHeight, maxColor, 0, imageData);
+    //writePPM("depthMap.ppm", imageWidth, imageHeight, maxColor, 0, imageData);
+    *depthMapOutput = {
+	imageWidth,
+	imageHeight,
+	maxColor,
+	imageData
+    };
 
     // Free the allocated memory
     free(imageData);

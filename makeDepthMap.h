@@ -20,7 +20,7 @@ class DepthMap {
         ~DepthMap();
 
         // Public Methods
-        void makeDepthMap(Point points[], int numPoints);
+        void makeDepthMap(Point points[], int numPoints, PPMImage* depthMapOutput);
     private:
         // Variables
         int imageWidth;
