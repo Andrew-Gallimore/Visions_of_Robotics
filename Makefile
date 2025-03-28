@@ -16,6 +16,8 @@ MATCHING_SRCS = matching.cc utils/imageUtils.cc utils/timer.cc makeDepthMap.cc
 MATCHING_CUDA_CC_SRCS = utils/imageUtils.cc utils/timer.cc makeDepthMap.cc
 MATCHING_CUDA_CU_SRCS = matchingCuda.cu
 
+MATCHING_P_SRCS = matchingP.cu utils/imageUtils.cc utils/timer.cc
+
 # Object files
 TEST_OBJS = $(TEST_SRCS:.cc=.o)
 QR_OBJS = $(QR_SRCS:.cc=.o)
@@ -29,6 +31,7 @@ TEST_TARGET = tests
 QR_TARGET = qr
 CALIB_TARGET = calib
 MATCHING_TARGET = matching
+MATCHING_P_TARGET = matchingP
 MATCHING_CUDA_TARGET = matchingCuda
 
 # Rules to build the final executables
@@ -47,6 +50,9 @@ $(MATCHING_TARGET): $(MATCHING_OBJS)
 $(MATCHING_CUDA_TARGET): $(MATCHING_CUDA_CC_OBJS) $(MATCHING_CUDA_CU_OBJS)
 	$(NVCC) $(CUDAFLAGS) -o $@ $(MATCHING_CUDA_CC_OBJS) $(MATCHING_CUDA_CU_OBJS) -ljpeg
 
+$(MATCHING_P_TARGET): $(MATCHING_P_SRCS)
+	$(NVCC) $(CUDAFLAGS) -o $@ $(MATCHING_P_SRCS) -ljpeg
+
 # Rule to build object files from .cc files
 %.o: %.cc
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -57,7 +63,7 @@ $(MATCHING_CUDA_TARGET): $(MATCHING_CUDA_CC_OBJS) $(MATCHING_CUDA_CU_OBJS)
 
 # Clean rule
 clean:
-	rm -f *.o $(TEST_TARGET) $(QR_TARGET) $(CALIB_TARGET) $(MATCHING_TARGET) $(MATCHING_CUDA_TARGET)
+	rm -f *.o $(TEST_TARGET) $(QR_TARGET) $(CALIB_TARGET) $(MATCHING_TARGET) $(MATCHING_CUDA_TARGET) $(MATCHING_P_TARGET)
 
 # Generic run rule
 run: $(TARGET)
@@ -76,9 +82,12 @@ run_calib: run
 run_matching: TARGET=$(MATCHING_TARGET)
 run_matching: run
 
-run_matchingP: TARGET=$(MATCHING_CUDA_TARGET)
-run_matchingP: run
+run_matchingCuda: TARGET=$(MATCHING_CUDA_TARGET)
+run_matchingCuda: run
 
+run_matchingP: TARGET=$(MATCHING_P_TARGET)
+run_matchingP: $(MATCHING_P_TARGET)
+run_matchingP: run
 
 # ==== To run the tests ====
 # make tests		// build
