@@ -2,7 +2,7 @@
 #include <vector>
 #include <cmath>
 #include "utils/imageUtils.h"
-#include "makeDepthMap.h"
+#include "makeDepthMapCuda.h"
 #include "utils/timer.h"
 #include "Structs.h"
 #include <cuda_runtime.h>
@@ -141,7 +141,7 @@ void matchingFunct(PPMImage* leftImage, PPMImage* rightImage, PPMImage* depthMap
     //PPMImage* leftImage = readPPM("images/colorTEMP.ppm", 0);
     //PPMImage* rightImage = readPPM("images/colorTEMP2.ppm", 0);
 
-    int numPoints = 20000;
+    int numPoints = 10000;
     Point initialPoints[numPoints];
     Point matchPoints[numPoints];
 
@@ -223,7 +223,7 @@ void matchingFunct(PPMImage* leftImage, PPMImage* rightImage, PPMImage* depthMap
     Timer depthMapTimer;
 
     depthMapTimer.start();
-    DepthMap depthMap(imageWidth, imageHeight, 5, 15.0);
+    DepthMap depthMap(imageWidth, imageHeight, 70, 10.0);
     // DepthMap depthMap(imageWidth, imageHeight, 10, 20.0);
     depthMap.makeDepthMap(initialPoints, numPoints, depthMapOutput);
     depthMapTimer.stop();
