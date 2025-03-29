@@ -2,7 +2,7 @@
 #include <vector>
 #include <cmath>
 #include "utils/imageUtils.h"
-#include "makeDepthMap.h"
+#include "makeDepthMapCuda.h"
 #include "utils/timer.h"
 #include "Structs.h"
 #include <cuda_runtime.h>
@@ -141,7 +141,7 @@ int main() {
     PPMImage* leftImage = readPPM("images/colorTEMP.ppm", 0);
     PPMImage* rightImage = readPPM("images/colorTEMP2.ppm", 0);
 
-    int numPoints = 30000;
+    int numPoints = 10000;
     Point initialPoints[numPoints];
     Point matchPoints[numPoints];
 
@@ -222,11 +222,17 @@ int main() {
 
     Timer depthMapTimer;
 
+    PPMImage* depthMapOutput = new PPMImage();
+
     depthMapTimer.start();
-    DepthMap depthMap(imageWidth, imageHeight, 5, 10.0);
+    DepthMap depthMap(imageWidth, imageHeight, 70, 10.0);
     // DepthMap depthMap(imageWidth, imageHeight, 10, 20.0);
-    depthMap.makeDepthMap(initialPoints, numPoints);
+    depthMap.makeDepthMap(initialPoints, numPoints, depthMapOutput);
     depthMapTimer.stop();
+
+    printf("Depth map size: %d x %d\n", depthMapOutput->width, depthMapOutput->height);
+    writePPM("depthMap.ppm", imageWidth, imageHeight, 255, 0, depthMapOutput->data);
+
     // For 100 random-placed points, 30 grid size, 110.0 distance threshold, sigma = 4.0
     // For 400 random-placed points, 40 grid size, 40 to 60 distance threshold (at 400 points, distance between them is 36), sigma = 3 to 4
     // For 5000 random-placed points, 5 grid size, 20.0 distance threshold, sigma = 4.0
