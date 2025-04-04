@@ -1,40 +1,29 @@
 # Compiler
-CC = gcc 
-NVCC = /usr/local/cuda/bin/nvcc
+CC = g++ 
 
 # Compiler flags
-CCFLAGS =  -I/usr/include/opencv4 
-CUFLAGS = -I/usr/local/cuda/bin -I/usr/include/opencv4 -w 
-
-#Load Libraries
-LDLIBS = -I/usr/include/opencv4 -ljpeg -lm -lopencv_core -lopencv_imgproc -lopencv_calib3d -lopencv_highgui -lopencv_imgcodecs -lopencv_calib3d -lopencv_videoio -llapacke -llapack -lblas -lcuda
+CFLAGS = -Wall 
 
 # Source files
-CCSRCS = realTime.cc ./utils/imageUtils.cc ./utils/timer.cc
-CUSRCS = matchingCudaFunct.cu makeDepthMapCuda.cu
+SRCS = robot.cc serialUtils.cc 
 
 # Object files (replace .cc with .o)
-CCOBJS = $(CCSRCS:.cc=.o)
-CUOBJS = $(CUSRCS:.cu=.o)
+OBJS = $(SRCS:.cc=.o)
 
 # Output executable
-TARGET = realtime
+TARGET = robot 
 
 # Rule to build the final executable
-$(TARGET): $(CCOBJS) $(CUOBJS)
-	$(NVCC) $(CUFLAGS) -o $(TARGET) $(CCOBJS) $(CUOBJS) $(LDLIBS)
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS)
 
-# Rule to build cc object files
-%.o: %.cc 
-	$(CC) $(CCFLAGS) -c $< -o $@
-
-# Rule to build cu object files
-%.o: %.cu 
-	$(NVCC) $(CUFLAGS) -c $< -o $@
+# Rule to build object files
+%.o: %.cc
+	$(CC) $(CFLAGS) -c $< -o $@
 
 # Clean rule
 clean:
-	rm -f *.o $(TARGET)
+	rm -f $(OBJS) $(TARGET)
 
 # Run the program
 run: $(TARGET)
