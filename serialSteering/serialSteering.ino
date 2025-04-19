@@ -25,7 +25,8 @@ void ack_turn (int spd, int theta)
    double r_v = 0; spd * (1 - 0.5 * (wl_const));
    double l_v = 0; spd * (1 + 0.5 * (wl_const));
   
-   if ( (theta * DEG_TO_RAD) < (PI / 2) )
+   // if ( (theta * DEG_TO_RAD) < (PI / 2) )
+   if ( theta < 90 )
    {
       r_v = spd * (1 + 0.5 * (wl_const));
       l_v = spd * (1 - 0.5 * (wl_const));
@@ -35,6 +36,9 @@ void ack_turn (int spd, int theta)
   
       Serial.print ("RIGHT WHEEL VELOCITY : ");
       Serial.println (r_v);
+      
+      steeringPos = value.toInt ();
+      steeringServo.write (theta);
   
       digitalWrite (left_input_a, HIGH);
       digitalWrite (left_input_b, LOW);
@@ -46,7 +50,8 @@ void ack_turn (int spd, int theta)
     
       delay (500);
    }
-   else if ( (theta * DEG_TO_RAD) > (PI / 2) )
+   // else if ( (theta * DEG_TO_RAD) > (PI / 2) )
+   else if ( theta > 90 )
    {
       r_v = spd * (1 - 0.5 * (wl_const));
       l_v = spd * (1 + 0.5 * (wl_const));
@@ -56,6 +61,9 @@ void ack_turn (int spd, int theta)
   
       Serial.print ("RIGHT WHEEL VELOCITY : ");
       Serial.println (r_v);
+      
+      steeringPos = value.toInt ();
+      steeringServo.write (theta);
   
       digitalWrite (right_input_a, HIGH);
       digitalWrite (right_input_b, LOW);
@@ -88,6 +96,9 @@ void ack_turn (int spd, int theta)
 
       delay (500);
    }
+   
+   cmd = "";
+   value = "";
 }
 
 void straighten ()
@@ -178,8 +189,24 @@ void loop ()
       reverse (value.toInt ());
       delay (1000);
    }
-   // else if ( cmd == "" )
-   // {}
+   else if ( cmd == "SSS" )
+   {
+       int angle = 0;
+       
+       for (angle = 21; angle <= 160; angle += 10)
+       {
+         ack_turn (value.toInt (), angle);
+         delay (750);
+       }
+       
+       for (angle = 160; angle >= 21; angle -= 10)
+       {
+         ack_turn (value.toInt (), angle);
+         delay (750);
+       }
+       
+       delay (1000);
+   }
    else
    {
       straighten ();

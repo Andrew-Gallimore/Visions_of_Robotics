@@ -5,6 +5,7 @@
 #include <termios.h>
 #include <string.h>
 #include <errno.h>
+
 #include "serialUtils.h"
 
 //motor commands are strings with the following structure. The
@@ -13,32 +14,37 @@
 //LBK255 left backwards full speed
 //etc
 
-int main() {
-     const int cmdLength = 7;
-     char cmd[cmdLength];
-     int portID;
-     int bytesWritten;
-//     int bytesRead;
+int main ()
+{
+   const int cmdLength = 7;
+   char cmd[cmdLength];
+   int portID;
+   int bytesWritten;
+   // int bytesRead;
 
-    portID = serialPortOpen();
-    if(portID<0){
-	    printf("Error opening serial port \n");
-	    exit(0);
-    } 
 
-  for(int loop=0;loop<5;loop++){ 
-       printf ("portID is %d\n", portID);
-    // Reading a string with spaces
-        printf("Enter a motor command: ");
-        fgets(cmd, sizeof(cmd), stdin);
-    
-     // Output the value
-        printf("You entered: %s", cmd);// Write data to the serial port
-    
-	bytesWritten = serialPortWrite(cmd,portID);
-        if (bytesWritten>0)
-        printf("Sent %d bytes: %s\n", bytesWritten, cmd);
-  }
+   while ( strcmp (cmd, "QQQQQQ") != 0)
+   {
+      portID = serialPortOpen ();
+      if ( portID < 0 )
+      {
+         printf ("Error opening serial port \n");
+         exit (0);
+      }
+
+
+      printf ("portID is %d\n", portID);
+      printf ("Enter a motor command: ");
+      fgets (cmd, sizeof (cmd), stdin);
+
+      printf ("You entered: %s\n", cmd);// Write data to the serial port
+
+      bytesWritten = serialPortWrite (cmd,portID);
+
+      if ( bytesWritten > 0 )
+         printf ("Sent %d bytes: %s\n", bytesWritten, cmd);\
+
+   }
 
     /*
       // Set the buffer to zero and read data from the serial port
@@ -48,15 +54,15 @@ int main() {
 	    printf("Received %d bytes: %s\n", bytesRead, buf);
    */
 
-    // Close the serial port
+    /* Close the serial port
     if(serialPortClose(portID)<0){
 	    printf("Could not close serial port \n");
 	    exit(0);
     } else {
 	    printf("Serial port closed \n");
-    }
+    } */
 
     return 0;
 
-}
+} // END OF MAIN
 
