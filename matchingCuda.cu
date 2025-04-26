@@ -244,11 +244,11 @@ int main() {
     // TODO: Make depth map not have to take a grid-sise, but instead have a better data structure that can handle the points better
 
     // Printing out the timeing
-    printf("\n");
+    /* printf("\n");
     printf("Kernal time: %d ms\n", (int)kernalTimer.elapsedMilliseconds());
     printf("Full Matching time: %d ms\n", (int)matchingTimer.elapsedMilliseconds());
     printf("Depth map time: %d ms\n", (int)depthMapTimer.elapsedMilliseconds());
-    printf("Total time: %d ms\n", (int)(depthMapTimer.elapsedMilliseconds() + matchingTimer.elapsedMilliseconds()));
+    printf("Total time: %d ms\n", (int)(depthMapTimer.elapsedMilliseconds() + matchingTimer.elapsedMilliseconds())); */
 
     return 0;
 }

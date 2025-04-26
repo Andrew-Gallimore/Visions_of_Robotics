@@ -1,14 +1,38 @@
 #include <string>
+#include <iostream>
 #include <opencv2/opencv.hpp>
 #include <opencv2/videoio.hpp>
 #include "utils/imageUtils.h"
 #include "matchingCudaFunct.h"
-#include <opencv2/calib3d.hpp>
+#include "serialUtils.h"
+//#include <opencv1/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
 using namespace cv;
 using namespace std;
+
+
+bool shouldStop (PPMImage *img)
+{
+	int sum = 0;
+
+	for (int i = 0; i < (img->width * img->height); i++ )
+	{
+		sum += img->data [i];
+
+
+	}
+
+	cout << sum << endl;
+	if (sum > (4000000))
+	{
+		return true;
+	}
+
+
+	return false;
+}
 
 int main(int argc, char** argv) {
 
@@ -85,6 +109,51 @@ while(1) {
 	Mat img(depthMap.height, depthMap.width, CV_8UC1, depthMap.data);	
 
 	imshow("depthImageVideo", img);
+
+
+    // obstacle
+	// cALLFUNCTION (0);
+
+	const int cmdLength = 7;
+    char* cmd;
+    int portID;
+    int bytesWritten;
+
+	portID = serialPortOpen ();
+	if ( portID < 0 )
+	{
+		printf ("Error opening serial port \n");
+		exit (0);
+	}
+	  
+    if ( shouldStop (&depthMap) )
+    {
+    //   printf ("portID is %d\n", portID);
+    //   printf ("Enter a motor command: ");
+    //   fgets (cmd, sizeof (cmd), stdin);
+
+	  cmd = (char *) "STP000\n"; 
+
+      printf ("You entered: %s\n", cmd);// Write data to the serial port
+
+      bytesWritten = serialPortWrite (cmd,portID);
+
+      if ( bytesWritten > 0 )
+         printf ("Sent %d bytes: %s\n", bytesWritten, cmd);
+
+    }
+	else
+	{
+	  cmd = (char *) "FWD090\n"; 
+
+      printf ("You entered: %s\n", cmd);// Write data to the serial port
+
+      bytesWritten = serialPortWrite (cmd,portID);
+
+      if ( bytesWritten > 0 )
+         printf ("Sent %d bytes: %s\n", bytesWritten, cmd);
+	}
+
 	
 	hconcat(rectifiedLeft, rectifiedRight,both);
 	imshow("Left and Right",both);

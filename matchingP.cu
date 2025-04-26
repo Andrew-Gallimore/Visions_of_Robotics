@@ -109,13 +109,14 @@ int main() {
     PPMImage* leftImage = readPPM("images/bwTEMP.ppm", 0);
     PPMImage* rightImage = readPPM("images/bwTEMP2.ppm", 0);
 
-    // convertJPGToPPM("images/leftRectified2-adjusted.jpg", "images/colorTEMP.ppm");
-    // convertJPGToPPM("images/rightRectified2.jpg", "images/colorTEMP2.ppm");
-    // PPMImage* leftImage = readPPM("images/colorTEMP.ppm", 0);
-    // PPMImage* rightImage = readPPM("images/colorTEMP2.ppm", 0);
+    // convertJPGToPPM("opencvrect/nvcamtest_11219_s01_00000.jpg", "images/colorTEMPL_26_april.ppm");
+    // convertJPGToPPM("opencvrect/nvcamtest_11114_s00_00000.jpg", "images/colorTEMPR_26_april.ppm");
 
-    // PPMImage* leftImage = readPPM("images/leftBW.ppm", 0);
-    // PPMImage* rightImage = readPPM("images/rightBW.ppm", 0);
+    // convertJPGToPPM("opencvrect/nvcamtest_11219_s01_00000.jpg", "images/colorTEMPL_26_april.ppm");
+    // convertJPGToPPM("opencvrect/nvcamtest_11219_s01_00000.jpg", "images/colorTEMPR_26_april.ppm");
+
+    // PPMImage* leftImage = readPPM("images/colorTEMPL_26_april.ppm", 0);
+    // PPMImage* rightImage = readPPM("images/colorTEMPR_26_april.ppm", 0);
 
     Timer totalTimer;
     Timer kernalTimer;
@@ -137,7 +138,7 @@ int main() {
     cudaMalloc((void**) &d_right, rightImage->width * rightImage->height * sizeof(unsigned char)); 
     cudaMalloc((void**) &d_disparities, rightImage->width * rightImage->height * sizeof(unsigned char)); 
     cudaMalloc((void**) &d_confidence, rightImage->width * rightImage->height * sizeof(unsigned char)); 
-    
+
     totalTimer.start();
 
     cudaMemcpy(d_left, leftImage->data, leftImage->width * leftImage->height * sizeof(unsigned char), cudaMemcpyHostToDevice);
@@ -158,10 +159,9 @@ int main() {
     cudaMemcpy(disparities, d_disparities, leftImage->width * leftImage->height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
     cudaMemcpy(confidence, d_confidence, leftImage->width * leftImage->height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
     
-    totalTimer.stop();
     
-    writePPM("depthMapP.ppm", leftImage->width, leftImage->height, 255, 0, disparities);
-    writePPM("confidenceP.ppm", leftImage->width, leftImage->height, 255, 0, confidence);
+    writePPM("images/depthMapP.ppm", leftImage->width, leftImage->height, 255, 0, disparities);
+    writePPM("images/confidenceP.ppm", leftImage->width, leftImage->height, 255, 0, confidence);
 
     // Making mixed color image for the depthMap/confidenceMap.
     // Colors are interlaced in the array: r, g, b, r, g, b, etc.
@@ -190,9 +190,11 @@ int main() {
             }
         }
     }
-    writePPM("mix.ppm", leftImage->width, leftImage->height, 255, 1, mixedImage);
+    writePPM("images/mix.ppm", leftImage->width, leftImage->height, 255, 1, mixedImage);
     delete[] mixedImage;
     
+    totalTimer.stop();
+
     // Got from running calibration on the images
     // fx, 0,  Ox
     // 0,  fy, Oy

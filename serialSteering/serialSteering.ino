@@ -17,6 +17,7 @@ String value  = "";
 
 int portSpeed = 9600;
 int steeringPos = 0;    // variable to store the servo position
+unsigned long lastCmdTime = 0;
 
 void ack_turn (int spd, int theta)
 {
@@ -48,7 +49,7 @@ void ack_turn (int spd, int theta)
       digitalWrite (right_input_b, LOW);
       analogWrite (right_enable_a, l_v);
     
-      delay (500);
+      // delay (500);
    }
    // else if ( (theta * DEG_TO_RAD) > (PI / 2) )
    else if ( theta > 90 )
@@ -73,7 +74,7 @@ void ack_turn (int spd, int theta)
       digitalWrite (left_input_b, LOW);
       analogWrite (left_enable_a, l_v);
     
-      delay (500);
+      // delay (500);
    }
    else 
    {
@@ -94,7 +95,7 @@ void ack_turn (int spd, int theta)
       digitalWrite (left_input_b, LOW);
       analogWrite (left_enable_a, r_v);
 
-      delay (500);
+      // delay (500);
    }
    
    cmd = "";
@@ -167,50 +168,56 @@ void loop ()
       //Serial.print("and ");
       Serial.println (value);
    }
-    
-   if ( cmd == "STR" )
+   
+   if ( (millis() - lastCmdTime) < 3000 )
    {
-      steeringPos = value.toInt ();
-      steeringServo.write (steeringPos);
-      delay (1000);
-   }
-   else if ( cmd == "STP" )
-   {
-      straighten ();
-      delay (1000);
-   }
-   else if ( cmd == "FWD")
-   {
-      ack_turn (value.toInt (), 90);
-      delay (1000);
-   }
-   else if ( cmd == "REV" )
-   {
-      reverse (value.toInt ());
-      delay (1000);
-   }
-   else if ( cmd == "SSS" )
-   {
-       int angle = 0;
-       
-       for (angle = 21; angle <= 160; angle += 10)
-       {
-         ack_turn (value.toInt (), angle);
-         delay (750);
-       }
-       
-       for (angle = 160; angle >= 21; angle -= 10)
-       {
-         ack_turn (value.toInt (), angle);
-         delay (750);
-       }
-       
-       delay (1000);
+     if ( cmd == "STR" )
+     {
+        lastCmdTime = millis ();
+        steeringPos = value.toInt ();
+        steeringServo.write (steeringPos);
+        // delay (1000);
+     }
+     else if ( cmd == "STP" )
+     {
+        lastCmdTime = millis ();
+        straighten ();
+        // delay (1000);
+     }
+     else if ( cmd == "FWD")
+     {
+        lastCmdTime = millis ();
+        ack_turn (value.toInt (), 90);
+        // delay (1000);
+     }
+     else if ( cmd == "REV" )
+     {
+        lastCmdTime = millis ();
+        reverse (value.toInt ());
+        // delay (1000);
+     }
+     else if ( cmd == "SSS" )
+     {
+         lastCmdTime = millis (); 
+         int angle = 0;
+         
+         for (angle = 21; angle <= 160; angle += 10)
+         {
+           ack_turn (value.toInt (), angle);
+           // delay (750);
+         }
+         
+         for (angle = 160; angle >= 21; angle -= 10)
+         {
+           ack_turn (value.toInt (), angle);
+           // delay (750);
+         }
+     }
    }
    else
    {
-      straighten ();
-      delay (1234);
+     straighten ();
+     //delay (1234);
    }  
 } // --- LOOP END ---
 

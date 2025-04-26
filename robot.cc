@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -7,6 +9,18 @@
 #include <errno.h>
 
 #include "serialUtils.h"
+#include "cvTest/readData.h"
+#include "readParams.h"
+#include "makeDepthMapCuda.h"
+#include "makeDepthMap.h"
+#include "matchingCudaFunt.h"
+#include "serialUtils.h"
+#include "Structs.h"
+
+#include "utils/imageUtils.h"
+#include "utils/matrixUtils.h"
+#include "utils/timer.h"
+#include "vectorUtils.h"
 
 //motor commands are strings with the following structure. The
 //STR186 steer to 186 degrees 0 degrees = hard left 180 degress hard right 90 degrees straight
@@ -20,8 +34,6 @@ int main ()
    char cmd[cmdLength];
    int portID;
    int bytesWritten;
-   // int bytesRead;
-
 
    while ( strcmp (cmd, "QQQQQQ") != 0)
    {
@@ -42,7 +54,7 @@ int main ()
       bytesWritten = serialPortWrite (cmd,portID);
 
       if ( bytesWritten > 0 )
-         printf ("Sent %d bytes: %s\n", bytesWritten, cmd);\
+         printf ("Sent %d bytes: %s\n", bytesWritten, cmd);
 
    }
 
