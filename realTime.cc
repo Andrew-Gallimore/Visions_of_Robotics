@@ -24,7 +24,7 @@ bool shouldStop (PPMImage *img)
 
 	}
 
-	cout << sum << endl;
+	// cout << sum << endl;
 	if (sum > (4000000))
 	{
 		return true;
@@ -32,6 +32,71 @@ bool shouldStop (PPMImage *img)
 
 
 	return false;
+}
+
+void handleObstacles (PPMImage *depthImg, int portID)
+{
+	int zones = 5;
+	int zoneWidth = (depthImg->width)/zones;
+	int zoneSums [zones] = {0};
+	bool zonesBlocked [zones] = {false};
+
+	char* mvCmd = "FWD090\n";
+	char* strCmd = "STR090\n";
+
+	for (int i = 0; i < zones; i++)
+	{
+		for (int j = 0; j < zoneWidth; j++)
+		{
+			for (int h = 0; h < (depthImg->height); h++)
+			{
+				zoneSums [i] += depthImg->data [(h * depthImg->width) + (zoneWidth * i) + j];	
+			}
+		}
+	}
+
+	for (int i = 0; i < zones; i++)
+	{
+		// cout << "Zone" << (i) << ":" << zoneSums [i] << ' ';
+
+	    if (zoneSums [i] >= (4000000 / zones))
+		{
+			zonesBlocked [i] = true;
+		}
+
+	    cout << "Zone" << (i) << ":" << zonesBlocked [i] << ' ';
+	}
+	cout << endl;
+
+	if (zonesBlocked[0]) // zone 0 blocked
+	{
+		strCmd = "STR120\n"; 
+	}
+	else if (zonesBlocked[4]) // zone 4 blocked 
+	{
+		strCmd = "STR060\n"; 
+	}
+
+	int bytesWritten;
+	if (zonesBlocked[0] && zonesBlocked[1] && zonesBlocked[2] && zonesBlocked[3] && zonesBlocked[4])
+	{
+		mvCmd = "STP000\n";
+	}
+	else
+	{
+		bytesWritten = serialPortWrite (strCmd,portID);
+
+      if ( bytesWritten > 0 ){
+         printf ("Sent %d bytes: %s\n", bytesWritten, strCmd);
+	  }
+	}
+
+      bytesWritten = serialPortWrite (mvCmd,portID);
+
+      if ( bytesWritten > 0 )
+	  {
+         printf ("Sent %d bytes: %s\n", bytesWritten, mvCmd);
+	  }
 }
 
 int main(int argc, char** argv) {
@@ -62,6 +127,14 @@ VideoCapture capR(right_cam_pipeline,CAP_GSTREAMER);
 
 Mat left_m;
 Mat right_m;
+
+int portID;
+portID = serialPortOpen ();
+	if ( portID < 0 )
+	{
+		printf ("Error opening serial port \n");
+		exit (0);
+	}
 
 while(1) {
 	capL >> left_m;
@@ -112,21 +185,10 @@ while(1) {
 
 
     // obstacle
-	// cALLFUNCTION (0);
+	handleObstacles (&depthMap, portID);
 
-	const int cmdLength = 7;
-    char* cmd;
-    int portID;
-    int bytesWritten;
-
-	portID = serialPortOpen ();
-	if ( portID < 0 )
-	{
-		printf ("Error opening serial port \n");
-		exit (0);
-	}
 	  
-    if ( shouldStop (&depthMap) )
+    /* if ( shouldStop (&depthMap) )
     {
     //   printf ("portID is %d\n", portID);
     //   printf ("Enter a motor command: ");
@@ -152,7 +214,7 @@ while(1) {
 
       if ( bytesWritten > 0 )
          printf ("Sent %d bytes: %s\n", bytesWritten, cmd);
-	}
+	} */
 
 	
 	hconcat(rectifiedLeft, rectifiedRight,both);
