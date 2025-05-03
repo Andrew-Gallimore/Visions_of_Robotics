@@ -11,7 +11,7 @@ LDLIBS = -I/usr/include/opencv4 -ljpeg -lm -lopencv_core -lopencv_imgproc -lopen
 
 # Source files
 CCSRCS = realTime.cc ./utils/imageUtils.cc ./utils/timer.cc serialUtils.cc
-CUSRCS = matchingCudaFunct.cu makeDepthMapCuda.cu
+CUSRCS = matchingCudaFunct.cu
 
 # Object files (replace .cc with .o)
 CCOBJS = $(CCSRCS:.cc=.o)
