@@ -14,7 +14,7 @@ void getDisparities(unsigned char* leftImage, unsigned char* rightImage, int col
     int long average = 0;
     int d = 0;
 
-    int arbitraryConfidence = 50;
+    int arbitraryConfidence = 20;
 
     int leftX = blockDim.x * blockIdx.x + threadIdx.x;
     int leftY = blockDim.y * blockIdx.y + threadIdx.y;
@@ -23,7 +23,7 @@ void getDisparities(unsigned char* leftImage, unsigned char* rightImage, int col
     int maxValue = 0;
     for(int x = -1 * windowSize; x < windowSize; x++) {
         for(int y = -1 * windowSize; y < windowSize; y++) {
-            int index = (leftX + x * 2) + ((leftY + y * 2) * cols);
+            int index = (leftX + x * 1) + ((leftY + y * 1) * cols);
             if(index < 0 || index >= cols * rows) {
                 continue;
             }
@@ -39,39 +39,35 @@ void getDisparities(unsigned char* leftImage, unsigned char* rightImage, int col
     if(maxValue - minValue < arbitraryConfidence) {
         int index = (leftY * cols) + leftX;
         confidence[index] = 210;
-        disparities[index] = 0;
+        disparities[index] = d;
         return;
     }
     
+    float maxDisparity = 200;
 
-    for(int offset = 0; offset < leftX && offset < 200; offset += windowSize) {
-    
+    for(int offset = 0; offset < leftX && offset < maxDisparity; offset += 2) {
         int comparison = 0;
+        for(int x = -1 * windowSize; x <= windowSize; x++) {
+            for(int y = -1 * windowSize; y <= windowSize; y++) {
+                if(leftX + x >= 0 && leftX + x < cols &&
+                   leftY + y >= 0 && leftY + y < rows &&
+                   leftX + x - offset >= 0 && leftX + x - offset < cols)
+                {
+                    int leftIndex = (leftX + x) + ((leftY + y) * cols);
+                    int rightIndex = ((leftX - offset) + x) + ((leftY + y) * cols);
+                    
+                    unsigned char leftPixel = leftImage[leftIndex];
+                    unsigned char rightPixel = rightImage[rightIndex];
 
-        for(int x = -1 * windowSize; x < windowSize; x++) {
-            for(int y = -1 * windowSize; y < windowSize; y++) {
-                int adjX = x * 2;
-                int adjY = y * 2;
-                if(adjX < 2 && adjY > -2 && adjY < 2 && adjY > 2) {
-                    adjX = x;
-                    adjX = y;
+                    int diff = (int)leftPixel - (int)rightPixel;
+                    comparison += abs(diff);
                 }
-                int leftIndex = (leftX + adjX) + ((leftY + adjY) * cols);
-                int rightIndex = ((leftX - offset) + adjX) + ((leftY + adjY) * cols);
-                
-                if(leftIndex < 0 || leftIndex >= cols * rows || rightIndex < 0 || rightIndex >=  cols * rows) {
-                    continue;
-                }
-                
-                int diff = leftImage[leftIndex] - rightImage[rightIndex];
-                comparison += diff * diff;
             }
         }
-        
         if(comparison < smallest) {
             smallest = comparison;
             average += smallest;
-            d = offset;
+            d = (unsigned char)offset;
         }
     }
 
@@ -83,8 +79,20 @@ void getDisparities(unsigned char* leftImage, unsigned char* rightImage, int col
         conf = 210;
     }
 
-    disparities[index] = d;
-    confidence[index] = conf;
+    int spacing = 60; // mm
+
+    int actualDistance = (spacing * ((561.85034 + 560.63837) / 2)) / d;
+    actualDistance = actualDistance / 8; // Scaling 2000 mm to about 255
+    if(actualDistance > 255) actualDistance = 255;
+    if(actualDistance <= 0) actualDistance = 0;
+
+    if ((d > 20 && d <= 200))
+    {
+        disparities[index] = (d / maxDisparity) * 255;
+        //distance[index] = (spacing * ((561.85034 + 560.63837) / 2)) / d;
+
+        confidence[index] = conf;
+    }
 }
 
 void matchingFunct(PPMImage* leftImage, PPMImage* rightImage, PPMImage* depthMapOutput) {
@@ -107,19 +115,22 @@ void matchingFunct(PPMImage* leftImage, PPMImage* rightImage, PPMImage* depthMap
     Timer totalTimer;
     Timer kernalTimer;
     
-    int windowSize = 7;
+    int windowSize = 8;
     
     unsigned char disparities[leftImage->width * leftImage->height] = {0};
+    int distances[leftImage->width * leftImage->height] = {0};
     unsigned char confidence[leftImage->width * leftImage->height] = {0};
     
     unsigned char* d_left; 
     unsigned char* d_right;
     unsigned char* d_disparities;
+    // int* d_distances;
     unsigned char* d_confidence;
     
     cudaMalloc((void**) &d_left, leftImage->width * leftImage->height * sizeof(unsigned char)); 
     cudaMalloc((void**) &d_right, rightImage->width * rightImage->height * sizeof(unsigned char)); 
     cudaMalloc((void**) &d_disparities, rightImage->width * rightImage->height * sizeof(unsigned char)); 
+    // cudaMalloc((void**) &d_distances, rightImage->width * rightImage->height * sizeof(int)); 
     cudaMalloc((void**) &d_confidence, rightImage->width * rightImage->height * sizeof(unsigned char)); 
 
     totalTimer.start();
@@ -140,9 +151,9 @@ void matchingFunct(PPMImage* leftImage, PPMImage* rightImage, PPMImage* depthMap
     kernalTimer.stop();
 
     cudaMemcpy(disparities, d_disparities, leftImage->width * leftImage->height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
+    // cudaMemcpy(distances, d_distances, leftImage->width * leftImage->height * sizeof(int), cudaMemcpyDeviceToHost);
     cudaMemcpy(confidence, d_confidence, leftImage->width * leftImage->height * sizeof(unsigned char), cudaMemcpyDeviceToHost);
-    
-    
+
     // writePPM("images/depthMapP.ppm", leftImage->width, leftImage->height, 255, 0, disparities);
     // writePPM("images/confidenceP.ppm", leftImage->width, leftImage->height, 255, 0, confidence);
 
@@ -175,6 +186,7 @@ void matchingFunct(PPMImage* leftImage, PPMImage* rightImage, PPMImage* depthMap
     }
     // writePPM("images/mix.ppm", leftImage->width, leftImage->height, 255, 1, mixedImage);
     depthMapOutput->data = disparities;
+    // distancesOutput = distances;
     delete[] mixedImage;
     
     totalTimer.stop();

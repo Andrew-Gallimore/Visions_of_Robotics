@@ -8,6 +8,8 @@
 //#include <opencv1/calib3d.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <thread>
+#include <unistd.h>
 
 using namespace cv;
 using namespace std;
@@ -45,8 +47,8 @@ void handleObstacles (PPMImage *depthImg, int portID)
 	int zoneSums [zones] = {0};
 	bool zonesBlocked [zones] = {false};
 
-	char* mvCmd = "FWD090\n";
-	char* strCmd = "STR090\n";
+	char* mvCmd = "FWD070\n";
+	char* strCmd = "STR100\n";
 
 	// cout << "CURRENT PORT ID: " << portID;
 
@@ -57,23 +59,23 @@ void handleObstacles (PPMImage *depthImg, int portID)
 		{
 			for (int h = 0; h < (depthImg->height); h++)
 			{
-				zoneSums [i] += depthImg->data [(h * depthImg->width) + (zoneWidth * i) + j];	
+					zoneSums [i] += depthImg->data [(h * depthImg->width) + (zoneWidth * i) + j];	
 			}
 		}
 	}
 
 	for (int i = 0; i < zones; i++)
 	{
-		//cout << "Zone" << (i) << ":" << zoneSums [i] << ' ';
+		cout << "Zone" << (i) << ":" << zoneSums [i] << ' ';
 
-	    if (zoneSums [i] >= (4000000 / 2))
+	    if (zoneSums [i] >= (4000000 / zones))
 		{
 			zonesBlocked [i] = true;
 		}
 
-	    //cout << "Zone " << (i) << ":" << zonesBlocked [i] << endl;
+	    cout << "Zone " << (i) << ":" << zonesBlocked [i] << endl;
 	}
-	//cout << endl;
+	cout << endl;
 
 	bool mvOrStr = false; // TRUE - MOVE | FALSE - STR
 
@@ -85,7 +87,7 @@ void handleObstacles (PPMImage *depthImg, int portID)
 	{
 		//mvCmd = "STP000\n";
 
-		mvCmd = "REV090\n";
+		mvCmd = "REV070\n";
 	}
 	else if ( zonesBlocked[0] && 
 		      zonesBlocked[1] && 
@@ -99,7 +101,7 @@ void handleObstacles (PPMImage *depthImg, int portID)
 		      zonesBlocked[2] && 
 		      zonesBlocked[3] ) // middle blockage : Reverse at spd 110
 	{
-		mvCmd = "REV090\n";
+		mvCmd = "REV070\n";
 	}
 	else if ( zonesBlocked[0] ) // zone 0 blocked : Steer right 20 degrees
 	{
@@ -150,6 +152,8 @@ void handleObstacles (PPMImage *depthImg, int portID)
 	
 }
 
+bool keys [256] = {0}; 
+
 int main(int argc, char** argv) 
 {
 
@@ -180,6 +184,49 @@ int main(int argc, char** argv)
 	Mat left_m;
 	Mat right_m;
 
+	/* capL >> left_m;
+	capR >> right_m;
+
+	// Apply rectification
+	Mat rectifiedLeft, rectifiedRight, both;
+	remap(left_m, rectifiedLeft, map1x, map1y, INTER_LINEAR);
+	remap(right_m, rectifiedRight, map2x, map2y, INTER_LINEAR);
+
+	// Turn mat's into ppm format
+	PPMImage left = {
+		capL.get(CAP_PROP_FRAME_WIDTH),
+		capL.get(CAP_PROP_FRAME_HEIGHT),
+		255,
+		rectifiedLeft.data
+	};
+
+	PPMImage right = {
+		capR.get(CAP_PROP_FRAME_WIDTH),
+			capR.get(CAP_PROP_FRAME_HEIGHT),
+			255,
+			rectifiedRight.data
+	};  
+
+	for(int i = (left.width * left.height) - 1; i >= 0; i--) {
+		int newIndex = i + left.width * 12;
+		if(newIndex < left.width * left.height) {
+			right.data[newIndex] = right.data[i];
+		}
+	}
+	PPMImage depthMap = {
+				capR.get(CAP_PROP_FRAME_WIDTH),
+				capR.get(CAP_PROP_FRAME_HEIGHT),
+				255,
+				rectifiedRight.data
+		};
+
+	// Do depth calculation
+	matchingFunct(&left, &right, &depthMap);
+
+	// Output them to ppm image
+	//writePPM("testCapture.ppm", left.width, left.height, left.maxColor, 0, left.data);
+	Mat img(depthMap.height, depthMap.width, CV_8UC1, depthMap.data); */
+
 	int portID;
 	portID = serialPortOpen ();
 
@@ -189,7 +236,29 @@ int main(int argc, char** argv)
 		exit (0);
 	}
 
-	char control = '0';
+	thread ([] () -> void {
+							while (true) keys[(unsigned char) (cin.get ())] = true;
+						  }).detach ();
+
+	float offset = -9;
+	float currentRow;
+	for(int row = 0; row < map2y.rows; row++)
+	{
+		for(int col = 0; col < map2y.cols; col++)
+		{
+			currentRow = map2y.at<float>(row, col);
+			if(currentRow + offset < 0 || currentRow + offset > map2y.rows) map2y.at<float>(row, col) = currentRow;
+			else map2y.at<float>(row, col) = currentRow + offset;
+		}
+	}
+
+	// for(int i = (map2y.cols * map2y.rows) - 1; i >= 0; i--) 
+	// {
+	// 		int newIndex = i + map2y.cols * 12;
+	// 		if(newIndex < map2y.cols * map2y.rows) {
+	// 			map2y.at<float>(newIndex) = map2y.at<float>(i);
+	// 		}
+	// 	}
 
 	while ( 1 ) 
 	{
@@ -216,12 +285,12 @@ int main(int argc, char** argv)
 				rectifiedRight.data
 		};  
 
-		for(int i = (left.width * left.height) - 1; i >= 0; i--) {
-			int newIndex = i + left.width * 21;
+		/* for(int i = (left.width * left.height) - 1; i >= 0; i--) {
+			int newIndex = i + left.width * 12;
 			if(newIndex < left.width * left.height) {
 				right.data[newIndex] = right.data[i];
 			}
-		}
+		} */
 		PPMImage depthMap = {
 					capR.get(CAP_PROP_FRAME_WIDTH),
 					capR.get(CAP_PROP_FRAME_HEIGHT),
@@ -229,13 +298,15 @@ int main(int argc, char** argv)
 					rectifiedRight.data
 			};
 
-
 		// Do depth calculation
 		matchingFunct(&left, &right, &depthMap);
 
 		// Output them to ppm image
 		//writePPM("testCapture.ppm", left.width, left.height, left.maxColor, 0, left.data);
-		Mat img(depthMap.height, depthMap.width, CV_8UC1, depthMap.data);	
+		Mat img(depthMap.height, depthMap.width, CV_8UC1, depthMap.data);
+
+		if (keys [(unsigned char)'q'])
+		{	break;  }
 
 		imshow("depthImageVideo", img);
 
@@ -246,6 +317,7 @@ int main(int argc, char** argv)
 		imshow("Left and Right",both);
 
 		waitKey(100);
+		
 	} // end of while
 
 	// Release resources
