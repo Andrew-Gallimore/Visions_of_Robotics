@@ -85,13 +85,15 @@ void getDisparities(unsigned char* leftImage, unsigned char* rightImage, int col
     actualDistance = actualDistance / 8; // Scaling 2000 mm to about 255
     if(actualDistance > 255) actualDistance = 255;
     if(actualDistance <= 0) actualDistance = 0;
+    //printf("%d ",smallest);
 
-    if ((d > 20 && d <= 200))
+    if ((d > 20 && d <= 200) && smallest <= 1300)
     {
-        disparities[index] = (d / maxDisparity) * 255;
+        disparities[index] = (d * 3 / maxDisparity) * 255;
         //distance[index] = (spacing * ((561.85034 + 560.63837) / 2)) / d;
 
         confidence[index] = conf;
+
     }
 }
 

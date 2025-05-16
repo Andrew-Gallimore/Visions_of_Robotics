@@ -47,7 +47,7 @@ void handleObstacles (PPMImage *depthImg, int portID)
 	int zoneSums [zones] = {0};
 	bool zonesBlocked [zones] = {false};
 
-	char* mvCmd = "FWD070\n";
+	char* mvCmd = "FWD090\n";
 	char* strCmd = "STR100\n";
 
 	// cout << "CURRENT PORT ID: " << portID;
@@ -68,7 +68,7 @@ void handleObstacles (PPMImage *depthImg, int portID)
 	{
 		cout << "Zone" << (i) << ":" << zoneSums [i] << ' ';
 
-	    if (zoneSums [i] >= (4000000 / zones))
+	    if (zoneSums [i] >= (2000000 / zones))
 		{
 			zonesBlocked [i] = true;
 		}
@@ -85,7 +85,7 @@ void handleObstacles (PPMImage *depthImg, int portID)
 		 zonesBlocked[3] && 
 		 zonesBlocked[4] ) // Total blockage : Reverse at spd 180
 	{
-		//mvCmd = "STP000\n";
+		// mvCmd = "STP000\n";
 
 		mvCmd = "REV070\n";
 	}
